@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # STAGING DATABASE (POSTGRESQL)
+  # ==========================================
+  postgres-staging:
+    image: postgres:15-alpine
+    container_name: postgres_staging
+    environment:
+      POSTGRES_USER: staging_user
+      POSTGRES_PASSWORD: staging_password
+      POSTGRES_DB: staging_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_staging_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # ==========================================
+  # DATA WAREHOUSE (ORACLE DATABASE)
+  # ==========================================
+  oracle-dw:
+    image: gvenzl/oracle-free:23.3-slim-faststart
+    container_name: oracle_dw
+    environment:
+      ORACLE_PASSWORD: sys_password 
+      APP_USER: dw_user         
+      APP_PASSWORD: dw_password
+      ORACLE_DATABASE: DWDB      
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_dw_data:/opt/oracle/oradata
+    restart: unless-stopped
+
+volumes:
+  pg_staging_data:
+  oracle_dw_data:
