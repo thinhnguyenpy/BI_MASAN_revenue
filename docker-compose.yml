@@ -1,39 +1,56 @@
-version: '3.8'
-
 services:
-  # ==========================================
-  # STAGING DATABASE (POSTGRESQL)
-  # ==========================================
-  postgres-staging:
+  # 1. Database 1: Hệ thống Bán hàng & CRM (PostgreSQL)
+  postgres_sales:
     image: postgres:15-alpine
-    container_name: postgres_staging
+    container_name: stg_postgres_sales
     environment:
-      POSTGRES_USER: staging_user
-      POSTGRES_PASSWORD: staging_password
-      POSTGRES_DB: staging_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: sales_db
     ports:
       - "5432:5432"
     volumes:
-      - pg_staging_data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - data_network
     restart: unless-stopped
 
-  # ==========================================
-  # DATA WAREHOUSE (ORACLE DATABASE)
-  # ==========================================
-  oracle-dw:
-    image: gvenzl/oracle-free:23.3-slim-faststart
-    container_name: oracle_dw
+  # 2. Database 2: Hệ thống Sản xuất & Vận hành (MongoDB)
+  mongo_production:
+    image: mongo:6.0
+    container_name: stg_mongo_production
     environment:
-      ORACLE_PASSWORD: sys_password 
-      APP_USER: dw_user         
-      APP_USER_PASSWORD: dw_password
-      ORACLE_DATABASE: DWDB      
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin_password
+      MONGO_INITDB_DATABASE: production_db
     ports:
-      - "1521:1521"
+      - "27017:27017"
     volumes:
-      - oracle_dw_data:/opt/oracle/oradata
+      - ./data/mongodb:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init.js
+    networks:
+      - data_network
     restart: unless-stopped
 
-volumes:
-  pg_staging_data:
-  oracle_dw_data:
+  # 3. Database 3: Hệ thống Tài chính & Marketing (MySQL)
+  mysql_finance:
+    image: mysql:8.0
+    container_name: stg_mysql_finance
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: finance_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./init-mysql.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - data_network
+    restart: unless-stopped
+
+networks:
+  data_network:
+    driver: bridge
