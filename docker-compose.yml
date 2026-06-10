@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - data_network
     restart: unless-stopped
@@ -28,7 +28,7 @@ services:
       - "27017:27017"
     volumes:
       - ./data/mongodb:/data/db
-      - ./init-mongo.js:/docker-entrypoint-initdb.d/init.js
+      - ./data/init-mongo.js:/docker-entrypoint-initdb.d/init.js
     networks:
       - data_network
     restart: unless-stopped
@@ -46,7 +46,7 @@ services:
       - "3306:3306"
     volumes:
       - ./data/mysql:/var/lib/mysql
-      - ./init-mysql.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - data_network
     restart: unless-stopped

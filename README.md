@@ -77,3 +77,50 @@ python load_data/load_mysql.py
 python load_data/load_mongo.py
 # Output mong đợi: MongoDB Production Data Loading completed successfully!
 ```
+
+### Bước 4: Cấu hình biến môi trường (.env) và Java (Dành cho Spark)
+Hệ thống sử dụng file `.env` để bảo mật thông tin kết nối cơ sở dữ liệu thay vì ghi trực tiếp vào mã nguồn.
+
+**1. Tạo file `.env`:**
+Tại thư mục gốc của project, tạo một file tên là `.env` và dán nội dung sau vào:
+```env
+# Kết nối PostgreSQL (Bán hàng)
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=sales_db
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=admin_password
+```
+*(Lưu ý: Nếu sau này triển khai Spark bên trong Docker, hãy đổi `POSTGRES_HOST` thành `stg_postgres_sales`)*.
+
+**2. Cấu hình Java (Bắt buộc cho PySpark):**
+Mặc dù viết bằng Python, nhân cốt lõi của Spark yêu cầu phải có Java Runtime Environment.
+Trên Ubuntu, tiến hành cài đặt và cấu hình đường dẫn `JAVA_HOME` bằng lệnh sau:
+```bash
+sudo apt update
+sudo apt install openjdk-17-jre-headless
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+```
+
+---
+
+## Giai đoạn 3: Trích xuất và Làm sạch dữ liệu (Data Lake - Medallion Architecture)
+Hệ thống lưu trữ dữ liệu lớn (Data Lake) được thiết kế theo kiến trúc Medallion, tổ chức thành các thư mục vật lý chứa file **Parquet**.
+
+```text
+datalake/
+├── bronze/    # Raw Data: Dữ liệu thô hút nguyên bản từ 3 Database (Lưu vết lịch sử).
+├── silver/    # Cleansed Data: Dữ liệu đã được ép kiểu, làm sạch rác, xử lý Null.
+└── gold/      # Aggregated Data: Dữ liệu gộp/Star Schema sẵn sàng cho BI (Sắp triển khai).
+```
+
+### 3.1. Hút dữ liệu thô vào lớp Bronze (Ingestion)
+Lớp Bronze chỉ làm duy nhất một nhiệm vụ: Kết nối JDBC đến hệ thống nguồn, kéo nhanh toàn bộ dữ liệu và lưu xuống dạng Parquet để trả lại tài nguyên cho Database nguồn. 
+
+Kích hoạt môi trường ảo và chạy các script trích xuất:
+```bash
+python spark_jobs/1a_postgres_to_bronze_dim.py
+
+python spark_jobs/1b_postgres_to_bronze_fact.py
+```
