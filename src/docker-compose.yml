@@ -1,0 +1,73 @@
+services:
+  # 1. Database 1: Hệ thống Bán hàng & CRM (PostgreSQL)
+  postgres_sales:
+    image: postgres:15-alpine
+    container_name: stg_postgres_sales
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: sales_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./init/init_postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - data_network
+    restart: unless-stopped
+
+  # 2. Database 2: Hệ thống Sản xuất & Vận hành (MongoDB)
+  mongo_production:
+    image: mongo:6.0
+    container_name: stg_mongo_production
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin_password
+      MONGO_INITDB_DATABASE: production_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongodb:/data/db
+      - ./init/init_mongo.js:/docker-entrypoint-initdb.d/init.js
+    networks:
+      - data_network
+    restart: unless-stopped
+
+  # 3. Database 3: Hệ thống Tài chính & Marketing (MySQL)
+  mysql_finance:
+    image: mysql:8.0
+    container_name: stg_mysql_finance
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: finance_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./init/init_mysql.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - data_network
+    restart: unless-stopped
+
+  # 4. Database 4: Data Warehouse - Lớp Gold (PostgreSQL)
+  postgres_datawarehouse:
+    image: postgres:15-alpine
+    container_name: dwh_postgres_gold
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: datawarehouse
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./data/postgres_dw:/var/lib/postgresql/data
+      - ./init/init_dw.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - data_network
+    restart: unless-stopped
+
+networks:
+  data_network:
+    driver: bridge
