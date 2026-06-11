@@ -124,3 +124,30 @@ python spark_jobs/1a_postgres_to_bronze_dim.py
 
 python spark_jobs/1b_postgres_to_bronze_fact.py
 ```
+
+### 3.2. Làm sạch dữ liệu vào lớp Silver (Transformation)
+Ở bước này, Spark hoàn toàn không kết nối đến Database nguồn. Hệ thống đọc file Parquet từ lớp Bronze lên RAM, thực hiện chuẩn hóa:
+
+* **Xử lý rác:** Loại bỏ các chuỗi "NaN", "N/A", khoảng trắng vô nghĩa.
+* **Ép kiểu (Type Casting):** Chuyển đổi dữ liệu từ dạng chuỗi (`String`) sang các kiểu định dạng chuẩn (`Decimal`, `Date`) để phục vụ tính toán.
+* **Loại bỏ trùng lặp:** Xóa bỏ các dòng thiếu khóa chính hoặc bị trùng (Duplicate).
+
+```bash
+# Làm sạch các bảng Danh mục
+python spark_jobs/silver_jobs/2a_bronze_to_silver_dim.py
+
+# Làm sạch các bảng Sự kiện
+python spark_jobs/silver_jobs/2b_bronze_to_silver_fact.py
+```
+
+### 4. Tải dữ liệu lên Data Warehouse (Lớp Gold)
+Ở bước này, Spark sẽ đọc dữ liệu đã làm sạch từ lớp Silver và tải lên hệ thống Data Warehouse (PostgreSQL) theo mô hình Sơ đồ hình sao (Star Schema), thực hiện các nghiệp vụ:
+
+* **Khớp khóa (Look-up Keys):** Thay thế các mã tự nhiên gốc (ví dụ: `branch_id`) bằng các khóa nhân tạo tự tăng (`branch_key`) từ các bảng Dimension.
+* **Kỹ thuật Staging:** Đẩy dữ liệu từ Spark vào các bảng tạm (Staging Tables) trên Database trước khi đưa vào bảng chính thức để đảm bảo an toàn thao tác.
+* **Nạp dữ liệu (UPSERT):** Sử dụng cơ chế `ON CONFLICT DO UPDATE` để hợp nhất dữ liệu. Hệ thống sẽ tự động cập nhật nếu khóa đã tồn tại hoặc thêm mới nếu chưa, đảm bảo tuyệt đối không lặp dữ liệu (Idempotent).
+
+```bash
+# Khởi tạo lịch, nạp Dimensions và Fact Bán hàng
+python spark_jobs/gold_jobs/3_silver_to_gold_sales.py
+```
