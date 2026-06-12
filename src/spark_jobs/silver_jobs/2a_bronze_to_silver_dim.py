@@ -60,6 +60,12 @@ def transform_dimensions():
 
         try:
             df_raw   = spark.read.parquet(input_path)
+            
+            metadata_cols = ["ingest_date"]
+            for mc in metadata_cols:
+                if mc in df_raw.columns:
+                    df_raw = df_raw.drop(mc)
+            
             count_raw = df_raw.count()
 
             # Bước 1: Trim + chuẩn hóa null
