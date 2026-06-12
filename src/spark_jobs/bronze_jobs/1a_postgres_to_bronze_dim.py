@@ -1,97 +1,116 @@
 import os
+from datetime import datetime
+from dotenv import load_dotenv
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, trim, when
+from pyspark.sql.functions import lit
 
 # ============================================================
-# 1. CẤU HÌNH ĐƯỜNG DẪN
+# 1. NẠP CẤU HÌNH
 # ============================================================
+load_dotenv()
+DB_HOST     = os.getenv("POSTGRES_HOST", "localhost")
+DB_PORT     = os.getenv("POSTGRES_PORT", "5432")
+DB_NAME     = os.getenv("POSTGRES_DB",   "sales_db")
+DB_USER     = os.getenv("POSTGRES_USER")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+JDBC_URL    = f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+# File nằm ở: src/spark_jobs/bronze_jobs/1a_postgres_to_bronze_dim.py
+# Lùi 3 cấp: bronze_jobs -> spark_jobs -> src -> project_root
 current_dir  = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
 bronze_dir   = os.path.join(project_root, "datalake", "bronze", "sales_db")
-silver_dir   = os.path.join(project_root, "datalake", "silver", "sales_db")
+postgres_jar = os.path.join(project_root, "jars", "postgresql-42.7.3.jar")
+
+# Debug đường dẫn — xóa sau khi confirm đúng
+print(f"📁 project_root : {project_root}")
+print(f"📁 bronze_dir   : {bronze_dir}")
+print(f"📁 postgres_jar : {postgres_jar}")
+print(f"✅ Jar exists   : {os.path.exists(postgres_jar)}")
 
 # ============================================================
 # 2. KHỞI TẠO SPARK
 # ============================================================
-print("⚙️ Đang khởi tạo Spark [SILVER - DIMENSIONS]...")
+print("\n🚀 Đang khởi tạo Spark [BRONZE - DIMENSIONS]...")
 spark = (
     SparkSession.builder
-    .appName("Silver_Dimensions_Sales")
+    .appName("Postgres_Bronze_Dimensions")
     .master("local[*]")
+    .config("spark.jars", postgres_jar)
+    .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
     .getOrCreate()
 )
 spark.sparkContext.setLogLevel("ERROR")
 
 # ============================================================
-# 3. CONFIG: PK của từng bảng dimension
+# 3. HÀM ĐỌC JDBC
 # ============================================================
-DIM_CONFIG = {
-    "categories": {"pk": "category_id",  "partition_by": None},
-    "products":   {"pk": "product_id",   "partition_by": "category_id"},
-    "branches":   {"pk": "branch_id",    "partition_by": None},
-}
+def read_from_source(table_name: str):
+    return (
+        spark.read.format("jdbc")
+        .option("url",      JDBC_URL)
+        .option("dbtable",  table_name)
+        .option("user",     DB_USER)
+        .option("password", DB_PASSWORD)
+        .option("driver",   "org.postgresql.Driver")
+        .load()
+    )
 
 # ============================================================
-# 4. HÀM CLEAN CHUNG
+# 4. HÀM INGEST CHÍNH
 # ============================================================
-def clean_string_columns(df):
-    """Trim + chuẩn hóa các giá trị rác thành null thực sự."""
-    DIRTY_VALUES = ["", "null", "NULL", "N/A", "n/a", "none", "None", "NaN"]
-    for c_name, c_type in df.dtypes:
-        if c_type == "string":
-            df = df.withColumn(
-                c_name,
-                when(trim(col(c_name)).isin(DIRTY_VALUES), None)
-                .otherwise(trim(col(c_name)))
-            )
-    return df
+def ingest_dimensions(ingest_date: str):
+    """
+    Full load toàn bộ dimension tables từ PostgreSQL vào Bronze.
+    Dim tables không dùng incremental vì data nhỏ và ít thay đổi.
+    
+    Args:
+        ingest_date: Ngày chạy job, dùng làm partition key (YYYY-MM-DD)
+    """
+    dim_tables = ["categories", "products", "branches"]
 
-# ============================================================
-# 5. HÀM TRANSFORM CHÍNH
-# ============================================================
-def transform_dimensions():
-    for table, config in DIM_CONFIG.items():
-        print(f"\n✨ [DIM] Đang làm sạch bảng {table.upper()}...")
+    print(f"\n📅 NGÀY THỰC THI (INGEST DATE): {ingest_date}")
+    print(f"📋 Danh sách bảng: {dim_tables}")
 
-        input_path = os.path.join(bronze_dir, table)
-        if not os.path.exists(input_path):
-            print(f"⚠️  Không tìm thấy Bronze path: {input_path}. Bỏ qua.")
-            continue
+    success_tables = []
+    failed_tables  = []
 
+    for table in dim_tables:
         try:
-            df_raw   = spark.read.parquet(input_path)
-            count_raw = df_raw.count()
+            print(f"\n📥 [DIM] Đang hút bảng {table.upper()}...")
 
-            # Bước 1: Trim + chuẩn hóa null
-            df_clean = clean_string_columns(df_raw)
+            df_raw = read_from_source(table)
+            count  = df_raw.count()
 
-            # Bước 2: Drop dòng thiếu khóa chính
-            df_clean = df_clean.dropna(subset=[config["pk"]])
+            # Gắn metadata partition
+            df_partitioned = df_raw.withColumn("ingest_date", lit(ingest_date))
 
-            # Bước 3: Bỏ bản ghi trùng theo PK
-            df_clean = df_clean.dropDuplicates([config["pk"]])
+            output_path = os.path.join(bronze_dir, table)
 
-            count_clean = df_clean.count()
-            print(f"📊 Raw: {count_raw} | Clean: {count_clean} | Dropped: {count_raw - count_clean}")
+            df_partitioned.write \
+                .mode("overwrite") \
+                .partitionBy("ingest_date") \
+                .parquet(output_path)
 
-            # Bước 4: Ghi ra Silver
-            output_path = os.path.join(silver_dir, table)
-            writer = df_clean.write.mode("overwrite")
-
-            if config["partition_by"]:
-                writer = writer.partitionBy(config["partition_by"])
-
-            writer.parquet(output_path)
-            print(f"💾 [SILVER] Đã ghi tại: {output_path}")
+            print(f"📂 Đã lưu {count} dòng tại: {output_path}/ingest_date={ingest_date}")
+            success_tables.append(table)
 
         except Exception as e:
-            print(f"❌ Lỗi khi xử lý {table.upper()}: {e}")
-            raise
+            print(f"❌ Lỗi khi xử lý bảng {table.upper()}: {e}")
+            failed_tables.append(table)
+
+    # Summary
+    print(f"\n{'='*50}")
+    print(f"✅ Thành công : {success_tables}")
+    if failed_tables:
+        print(f"❌ Thất bại   : {failed_tables}")
+        raise RuntimeError(f"Một số bảng bị lỗi: {failed_tables}")
 
 # ============================================================
-# 6. ENTRY POINT
+# 5. ENTRY POINT
 # ============================================================
 if __name__ == "__main__":
-    transform_dimensions()
+    run_date = datetime.now().strftime("%Y-%m-%d")
+    ingest_dimensions(ingest_date=run_date)
     spark.stop()
-    print("\n✅ Hoàn tất Transformation Dimensions!")
+    print("\n✅ Hoàn tất Ingestion Dimensions!")
