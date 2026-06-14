@@ -1,11 +1,10 @@
 import os
-from datetime import datetime
 
 from dotenv import load_dotenv
 import psycopg2
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
-    col, lit, date_format,
+    col, date_format, sum as spark_sum,
     year, month, dayofmonth, quarter
 )
 
@@ -23,17 +22,17 @@ DW_JDBC_URL = f"jdbc:postgresql://{DW_HOST}:{DW_PORT}/{DW_NAME}"
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
-silver_dir = os.path.join(project_root, "datalake", "silver", "sales_db")
+finance_silver_dir = os.path.join(project_root, "datalake", "silver", "finance_db")
 postgres_jar = os.path.join(project_root, "jars", "postgresql-42.7.3.jar")
 
 
 # ============================================================
 # 2. INIT SPARK
 # ============================================================
-print("Starting Spark [GOLD - SALES DATA WAREHOUSE]...")
+print("Starting Spark [GOLD - MYSQL FINANCE/MARKETING]...")
 spark = (
     SparkSession.builder
-    .appName("Silver_To_Gold_Sales")
+    .appName("Silver_To_Gold_MySQL_Finance")
     .master("local[*]")
     .config("spark.jars", postgres_jar)
     .config("spark.sql.session.timeZone", "UTC")
@@ -46,7 +45,6 @@ spark.sparkContext.setLogLevel("ERROR")
 # 3. JDBC HELPERS
 # ============================================================
 def get_dw_conn():
-    """Create a psycopg2 connection to the Data Warehouse."""
     return psycopg2.connect(
         host=DW_HOST, port=DW_PORT,
         dbname=DW_NAME, user=DW_USER, password=DW_PASSWORD
@@ -54,7 +52,6 @@ def get_dw_conn():
 
 
 def read_gold_table(table_name):
-    """Read a Gold table into a Spark DataFrame."""
     return (
         spark.read.format("jdbc")
         .option("url", DW_JDBC_URL)
@@ -67,7 +64,6 @@ def read_gold_table(table_name):
 
 
 def write_staging(df, staging_table):
-    """Overwrite a staging table before the final upsert."""
     (
         df.write.format("jdbc")
         .option("url", DW_JDBC_URL)
@@ -81,10 +77,6 @@ def write_staging(df, staging_table):
 
 
 def upsert_to_gold(df, target_table, staging_table, conflict_keys: list, update_cols: list):
-    """
-    Pattern: write to staging, then INSERT ... ON CONFLICT DO UPDATE.
-    This keeps the job idempotent when it is re-run.
-    """
     write_staging(df, staging_table)
     print(f"   => Wrote {df.count()} rows to staging: {staging_table}")
 
@@ -118,7 +110,6 @@ def upsert_to_gold(df, target_table, staging_table, conflict_keys: list, update_
 # 4. STAGING TABLES
 # ============================================================
 def create_staging_tables():
-    """Create sales staging tables if they do not exist."""
     sqls = [
         """CREATE TABLE IF NOT EXISTS gold.stg_dim_date (
             date_key     INT,
@@ -130,32 +121,23 @@ def create_staging_tables():
             quarter      INT,
             year         INT
         )""",
-        """CREATE TABLE IF NOT EXISTS gold.stg_dim_branch (
-            branch_id   VARCHAR(50),
-            branch_name VARCHAR(255),
-            region      VARCHAR(100)
+        """CREATE TABLE IF NOT EXISTS gold.stg_dim_campaign (
+            campaign_id   INT,
+            campaign_name VARCHAR(255),
+            platform      VARCHAR(100)
         )""",
-        """CREATE TABLE IF NOT EXISTS gold.stg_dim_product (
-            product_id    VARCHAR(50),
-            product_name  VARCHAR(255),
-            category_name VARCHAR(255),
-            start_date    DATE,
-            end_date      DATE,
-            is_current    SMALLINT
+        """CREATE TABLE IF NOT EXISTS gold.stg_fact_marketing_spend (
+            date_key     INT,
+            campaign_key INT,
+            region       VARCHAR(100),
+            daily_spend  DECIMAL(18,2)
         )""",
-        """CREATE TABLE IF NOT EXISTS gold.stg_fact_sales (
-            date_key         INT,
-            product_key      INT,
-            branch_key       INT,
-            order_id         BIGINT,
-            sales_channel    VARCHAR(100),
-            customer_segment VARCHAR(100),
-            quantity         DECIMAL(18,2),
-            unit_price       DECIMAL(18,2),
-            unit_cost        DECIMAL(18,2),
-            revenue          DECIMAL(18,2),
-            total_cost       DECIMAL(18,2),
-            profit           DECIMAL(18,2)
+        """CREATE TABLE IF NOT EXISTS gold.stg_fact_monthly_budget (
+            date_key       INT,
+            region         VARCHAR(100),
+            budget_amount  DECIMAL(18,2),
+            target_revenue DECIMAL(18,2),
+            market_size    DECIMAL(18,2)
         )""",
     ]
 
@@ -166,7 +148,7 @@ def create_staging_tables():
             cur.execute(sql)
         conn.commit()
         cur.close()
-        print("   => Sales staging tables are ready.")
+        print("   => MySQL staging tables are ready.")
     finally:
         conn.close()
 
@@ -211,129 +193,122 @@ def load_dim_date():
 
 
 # ============================================================
-# 6. DIM_BRANCH
+# 6. DIM_CAMPAIGN
 # ============================================================
-def load_dim_branch():
-    print("\n[DIM_BRANCH] Loading...")
+def load_dim_campaign():
+    print("\n[DIM_CAMPAIGN] Loading...")
+
+    input_path = os.path.join(finance_silver_dir, "marketing_campaigns")
+    if not os.path.exists(input_path):
+        print(f"   => Silver path not found: {input_path}. Skipping.")
+        return
 
     df_silver = (
-        spark.read.parquet(os.path.join(silver_dir, "branches"))
-        .select("branch_id", "branch_name", "region")
+        spark.read.parquet(input_path)
+        .select("campaign_id", "campaign_name", "platform")
     )
 
     upsert_to_gold(
         df=df_silver,
-        target_table="gold.dim_branch",
-        staging_table="gold.stg_dim_branch",
-        conflict_keys=["branch_id"],
-        update_cols=["branch_name", "region"]
+        target_table="gold.dim_campaign",
+        staging_table="gold.stg_dim_campaign",
+        conflict_keys=["campaign_id"],
+        update_cols=["campaign_name", "platform"]
     )
 
 
 # ============================================================
-# 7. DIM_PRODUCT
+# 7. FACT_MARKETING_SPEND
 # ============================================================
-def load_dim_product():
-    print("\n[DIM_PRODUCT] Loading...")
+def load_fact_marketing_spend():
+    print("\n[FACT_MARKETING_SPEND] Processing and loading...")
 
-    df_products = spark.read.parquet(os.path.join(silver_dir, "products"))
-    df_categories = spark.read.parquet(os.path.join(silver_dir, "categories"))
-
-    df_prod_cat = df_products.join(df_categories, "category_id", "left")
-
-    existing_active = (
-        read_gold_table("gold.dim_product")
-        .filter(col("is_current") == 1)
-        .select("product_id")
-    )
-
-    df_new = (
-        df_prod_cat.join(existing_active, "product_id", "left_anti")
-        .select(
-            col("product_id"),
-            col("product_name"),
-            col("category_name"),
-            lit(datetime.now().strftime("%Y-%m-%d")).cast("date").alias("start_date"),
-            lit(None).cast("date").alias("end_date"),
-            lit(1).cast("smallint").alias("is_current")
-        )
-    )
-
-    df_new.cache()
-    count = df_new.count()
-    if count == 0:
-        print("   => No new products.")
-        df_new.unpersist()
+    input_path = os.path.join(finance_silver_dir, "daily_marketing_spend")
+    if not os.path.exists(input_path):
+        print(f"   => Silver path not found: {input_path}. Skipping.")
         return
 
-    upsert_to_gold(
-        df=df_new,
-        target_table="gold.dim_product",
-        staging_table="gold.stg_dim_product",
-        conflict_keys=["product_id"],
-        update_cols=["product_name", "category_name"]
-    )
-    df_new.unpersist()
-
-
-# ============================================================
-# 8. FACT_SALES
-# ============================================================
-def load_fact_sales():
-    print("\n[FACT_SALES] Processing and loading...")
-
-    df_orders = spark.read.parquet(os.path.join(silver_dir, "orders"))
-    df_details = spark.read.parquet(os.path.join(silver_dir, "order_details"))
-
-    dim_branch = read_gold_table("gold.dim_branch").select("branch_key", "branch_id")
-    dim_product = (
-        read_gold_table("gold.dim_product")
-        .filter(col("is_current") == 1)
-        .select("product_key", "product_id")
-    )
+    df_spend = spark.read.parquet(input_path)
+    dim_campaign = read_gold_table("gold.dim_campaign").select("campaign_key", "campaign_id")
 
     df_fact = (
-        df_orders.join(df_details, "order_id", "inner")
-        .withColumn("revenue", col("quantity") * col("unit_price"))
-        .withColumn("total_cost", col("quantity") * col("unit_cost"))
-        .withColumn("profit", col("revenue") - col("total_cost"))
-        .withColumn("date_key", date_format(col("order_date"), "yyyyMMdd").cast("int"))
-        .join(dim_branch, "branch_id", "left")
-        .join(dim_product, "product_id", "left")
+        df_spend
+        .withColumn("date_key", date_format(col("spend_date"), "yyyyMMdd").cast("int"))
+        .join(dim_campaign, "campaign_id", "left")
     )
 
     df_lost = df_fact.filter(
-        col("branch_key").isNull() | col("product_key").isNull()
+        col("date_key").isNull() | col("campaign_key").isNull() | col("region").isNull()
     )
     df_lost.cache()
     lost_count = df_lost.count()
     if lost_count > 0:
-        print(f"   => Skipping {lost_count} rows missing surrogate keys.")
+        print(f"   => Skipping {lost_count} rows missing date_key/campaign_key/region.")
         df_lost.select(
-            "order_id", "branch_id", "product_id",
-            "branch_key", "product_key"
+            "spend_id", "campaign_id", "spend_date", "region",
+            "date_key", "campaign_key"
         ).show(5, truncate=False)
     df_lost.unpersist()
 
     df_final = (
         df_fact
-        .filter(col("branch_key").isNotNull() & col("product_key").isNotNull())
-        .select(
-            "date_key", "product_key", "branch_key", "order_id",
-            "sales_channel", "customer_segment",
-            "quantity", "unit_price", "unit_cost",
-            "revenue", "total_cost", "profit"
+        .filter(
+            col("date_key").isNotNull()
+            & col("campaign_key").isNotNull()
+            & col("region").isNotNull()
         )
+        .select(
+            "date_key",
+            "campaign_key",
+            "region",
+            col("amount_spent").alias("daily_spend")
+        )
+        .groupBy("date_key", "campaign_key", "region")
+        .agg(spark_sum("daily_spend").alias("daily_spend"))
     )
 
     upsert_to_gold(
         df=df_final,
-        target_table="gold.fact_sales",
-        staging_table="gold.stg_fact_sales",
-        conflict_keys=["order_id", "product_key"],
-        update_cols=["date_key", "branch_key", "sales_channel",
-                     "customer_segment", "quantity", "unit_price",
-                     "unit_cost", "revenue", "total_cost", "profit"]
+        target_table="gold.fact_marketing_spend",
+        staging_table="gold.stg_fact_marketing_spend",
+        conflict_keys=["date_key", "campaign_key", "region"],
+        update_cols=["daily_spend"]
+    )
+
+
+# ============================================================
+# 8. FACT_MONTHLY_BUDGET
+# ============================================================
+def load_fact_monthly_budget():
+    print("\n[FACT_MONTHLY_BUDGET] Processing and loading...")
+
+    input_path = os.path.join(finance_silver_dir, "monthly_budgets")
+    if not os.path.exists(input_path):
+        print(f"   => Silver path not found: {input_path}. Skipping.")
+        return
+
+    df_budget = spark.read.parquet(input_path)
+
+    df_final = (
+        df_budget
+        .withColumn("date_key", date_format(col("budget_month"), "yyyyMMdd").cast("int"))
+        .filter(col("date_key").isNotNull() & col("region").isNotNull())
+        .select(
+            "date_key",
+            "region",
+            "budget_amount",
+            "target_revenue",
+            "market_size"
+        )
+        .dropDuplicates(["date_key", "region"])
+    )
+
+    upsert_to_gold(
+        df=df_final,
+        target_table="gold.fact_monthly_budget",
+        staging_table="gold.stg_fact_monthly_budget",
+        conflict_keys=["date_key", "region"],
+        update_cols=["budget_amount", "target_revenue", "market_size"]
     )
 
 
@@ -341,13 +316,13 @@ def load_fact_sales():
 # 9. ENTRY POINT
 # ============================================================
 if __name__ == "__main__":
-    print("\nInitializing Sales staging tables...")
+    print("\nInitializing MySQL staging tables...")
     create_staging_tables()
 
     load_dim_date()
-    load_dim_branch()
-    load_dim_product()
-    load_fact_sales()
+    load_dim_campaign()
+    load_fact_marketing_spend()
+    load_fact_monthly_budget()
 
     spark.stop()
-    print("\nFinished Silver to Gold Sales!")
+    print("\nFinished Silver to Gold MySQL Finance/Marketing!")
