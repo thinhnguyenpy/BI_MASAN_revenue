@@ -236,8 +236,12 @@ def zero_if_null(c_name: str):
 # ============================================================
 def load_fact_production_logs():
     print("\n[FACT_PRODUCTION_LOGS] Processing and loading...")
-
-    input_path = os.path.join(production_silver_dir, "production_logs")
+    # read partition when incremental
+    target_date = os.getenv("TARGET_DATE", None)
+    if target_date:
+        input_path = os.path.join(production_silver_dir, "production_logs", f"ingest_date={target_date}")
+    else:
+        input_path = os.path.join(production_silver_dir, "production_logs")
     if not os.path.exists(input_path):
         print(f"   => Silver path not found: {input_path}. Skipping.")
         return
@@ -314,8 +318,12 @@ def load_fact_production_logs():
 # ============================================================
 def load_fact_logistics_costs():
     print("\n[FACT_LOGISTICS_COSTS] Processing and loading...")
-
-    input_path = os.path.join(production_silver_dir, "logistics_costs")
+    # read partition when incremental
+    target_date = os.getenv("TARGET_DATE", None)
+    if target_date:
+        input_path = os.path.join(production_silver_dir, "logistics_costs", f"ingest_date={target_date}")
+    else:
+        input_path = os.path.join(production_silver_dir, "logistics_costs")
     if not os.path.exists(input_path):
         print(f"   => Silver path not found: {input_path}. Skipping.")
         return

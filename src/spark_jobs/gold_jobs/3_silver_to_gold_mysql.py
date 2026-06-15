@@ -223,7 +223,12 @@ def load_dim_campaign():
 def load_fact_marketing_spend():
     print("\n[FACT_MARKETING_SPEND] Processing and loading...")
 
-    input_path = os.path.join(finance_silver_dir, "daily_marketing_spend")
+    # read partition when incremental
+    target_date = os.getenv("TARGET_DATE", None)
+    if target_date:
+        input_path = os.path.join(finance_silver_dir, "daily_marketing_spend", f"ingest_date={target_date}")
+    else:
+        input_path = os.path.join(finance_silver_dir, "daily_marketing_spend")
     if not os.path.exists(input_path):
         print(f"   => Silver path not found: {input_path}. Skipping.")
         return
@@ -281,8 +286,12 @@ def load_fact_marketing_spend():
 # ============================================================
 def load_fact_monthly_budget():
     print("\n[FACT_MONTHLY_BUDGET] Processing and loading...")
-
-    input_path = os.path.join(finance_silver_dir, "monthly_budgets")
+    # read partition when incremental
+    target_date = os.getenv("TARGET_DATE", None)
+    if target_date:
+        input_path = os.path.join(finance_silver_dir, "monthly_budgets", f"ingest_date={target_date}")
+    else:
+        input_path = os.path.join(finance_silver_dir, "monthly_budgets")
     if not os.path.exists(input_path):
         print(f"   => Silver path not found: {input_path}. Skipping.")
         return
