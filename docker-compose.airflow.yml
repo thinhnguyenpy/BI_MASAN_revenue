@@ -19,3 +19,9 @@ services:
       - ./:/opt/airflow/project
     working_dir: /opt/airflow/project
     command: standalone
+    networks:
+      - data_network
+networks:
+  data_network:
+    external: true
+    name: bi_masan_shared_network

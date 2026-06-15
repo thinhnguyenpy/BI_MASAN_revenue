@@ -13,7 +13,7 @@ from pyspark.sql.functions import (
 # 1. CONFIG
 # ============================================================
 load_dotenv()
-DW_HOST = os.getenv("DW_HOST", "localhost")
+DW_HOST = os.getenv("DW_HOST", "dwh_postgres_gold")
 DW_PORT = os.getenv("DW_PORT", "5434")
 DW_NAME = os.getenv("DW_DB", "datawarehouse")
 DW_USER = os.getenv("DW_USER")

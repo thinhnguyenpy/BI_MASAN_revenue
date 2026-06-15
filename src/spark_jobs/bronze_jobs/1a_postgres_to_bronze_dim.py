@@ -8,7 +8,7 @@ from pyspark.sql.functions import lit
 # 1. NẠP CẤU HÌNH
 # ============================================================
 load_dotenv()
-DB_HOST     = os.getenv("POSTGRES_HOST", "localhost")
+DB_HOST     = os.getenv("POSTGRES_HOST", "stg_postgres_sales")
 DB_PORT     = os.getenv("POSTGRES_PORT", "5432")
 DB_NAME     = os.getenv("POSTGRES_DB",   "sales_db")
 DB_USER     = os.getenv("POSTGRES_USER")

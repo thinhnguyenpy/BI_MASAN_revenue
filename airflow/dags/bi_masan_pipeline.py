@@ -41,9 +41,6 @@ with DAG(
     start = EmptyOperator(task_id="start")
     finish = EmptyOperator(task_id="finish")
 
-    load_postgres = make_task("load_postgres", "src/load_data/load_postgres.py", dag)
-    load_mysql = make_task("load_mysql", "src/load_data/load_mysql.py", dag)
-    load_mongo = make_task("load_mongo", "src/load_data/load_mongo.py", dag)
 
     bronze_sales_dim = make_task(
         "bronze_sales_dim",
@@ -123,11 +120,10 @@ with DAG(
         dag,
     )
 
-    start >> [load_postgres, load_mysql, load_mongo]
-
-    load_postgres >> bronze_sales_dim >> bronze_sales_fact >> silver_sales_dim >> silver_sales_fact >> gold_sales
-    load_mysql >> bronze_mysql_dim >> bronze_mysql_fact >> silver_mysql_dim >> silver_mysql_fact >> gold_mysql
-    load_mongo >> bronze_mongo_dim >> bronze_mongo_fact >> silver_mongo_dim >> silver_mongo_fact >> gold_mongo
-
-    gold_sales >> gold_mongo
-    [gold_sales, gold_mysql, gold_mongo] >> finish
+    start >> bronze_sales_dim >> bronze_sales_fact >> silver_sales_dim >> silver_sales_fact >> gold_sales
+    
+    gold_sales >> bronze_mysql_dim >> bronze_mysql_fact >> silver_mysql_dim >> silver_mysql_fact >> gold_mysql
+    
+    gold_mysql >> bronze_mongo_dim >> bronze_mongo_fact >> silver_mongo_dim >> silver_mongo_fact >> gold_mongo
+    
+    gold_mongo >> finish

@@ -70,4 +70,5 @@ services:
 
 networks:
   data_network:
+    name: bi_masan_shared_network
     driver: bridge

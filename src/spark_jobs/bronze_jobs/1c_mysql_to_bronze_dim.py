@@ -13,7 +13,7 @@ from pyspark.sql.types import LongType, StringType, StructField, StructType
 # 1. LOAD CONFIG
 # ============================================================
 load_dotenv()
-DB_HOST = os.getenv("MYSQL_HOST", "localhost")
+DB_HOST = os.getenv("MYSQL_HOST", "stg_mysql_finance")
 DB_PORT = int(os.getenv("MYSQL_PORT", "3307"))
 DB_NAME = os.getenv("MYSQL_DB", "finance_db")
 DB_USER = os.getenv("MYSQL_USER", "admin")

@@ -13,4 +13,4 @@ ENV PATH=${JAVA_HOME}/bin:${PATH}
 USER airflow
 
 COPY --chown=airflow:root requirements.txt /tmp/bi_masan_requirements.txt
-RUN pip install --no-cache-dir -r /tmp/bi_masan_requirements.txt
+RUN pip install --no-cache-dir --default-timeout=1000 -r /tmp/bi_masan_requirements.txt

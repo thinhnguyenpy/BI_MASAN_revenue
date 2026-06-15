@@ -1,0 +1,45 @@
+[2026-06-15T08:04:19.820+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-06-15T08:04:19.833+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.gold_mysql manual__2026-06-15T07:12:06.551380+00:00 [queued]>
+[2026-06-15T08:04:19.836+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.gold_mysql manual__2026-06-15T07:12:06.551380+00:00 [queued]>
+[2026-06-15T08:04:19.836+0000] {taskinstance.py:2306} INFO - Starting attempt 2 of 3
+[2026-06-15T08:04:19.842+0000] {taskinstance.py:2330} INFO - Executing <Task(BashOperator): gold_mysql> on 2026-06-15 07:12:06.551380+00:00
+[2026-06-15T08:04:19.846+0000] {standard_task_runner.py:64} INFO - Started process 17988 to run task
+[2026-06-15T08:04:19.848+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'bi_masan_revenue_pipeline', 'gold_mysql', 'manual__2026-06-15T07:12:06.551380+00:00', '--job-id', '49', '--raw', '--subdir', 'DAGS_FOLDER/bi_masan_pipeline.py', '--cfg-path', '/tmp/tmpfj3peba_']
+[2026-06-15T08:04:19.849+0000] {standard_task_runner.py:91} INFO - Job 49: Subtask gold_mysql
+[2026-06-15T08:04:19.867+0000] {task_command.py:426} INFO - Running <TaskInstance: bi_masan_revenue_pipeline.gold_mysql manual__2026-06-15T07:12:06.551380+00:00 [running]> on host 6d0d47d20a89
+[2026-06-15T08:04:19.897+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='bi_masan_revenue_pipeline' AIRFLOW_CTX_TASK_ID='gold_mysql' AIRFLOW_CTX_EXECUTION_DATE='2026-06-15T07:12:06.551380+00:00' AIRFLOW_CTX_TRY_NUMBER='2' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-06-15T07:12:06.551380+00:00'
+[2026-06-15T08:04:19.898+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-06-15T08:04:19.904+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-06-15T08:04:19.904+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'cd /opt/airflow/project && python src/spark_jobs/gold_jobs/3_silver_to_gold_mysql.py']
+[2026-06-15T08:04:19.911+0000] {subprocess.py:86} INFO - Output:
+[2026-06-15T08:04:20.255+0000] {subprocess.py:93} INFO - /home/airflow/.local/lib/python3.11/site-packages/pyspark/bin/load-spark-env.sh: line 68: ps: command not found
+[2026-06-15T08:04:21.057+0000] {subprocess.py:93} INFO - 26/06/15 08:04:21 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+[2026-06-15T08:04:21.152+0000] {subprocess.py:93} INFO - Setting default log level to "WARN".
+[2026-06-15T08:04:21.152+0000] {subprocess.py:93} INFO - To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+[2026-06-15T08:04:27.374+0000] {subprocess.py:93} INFO - Starting Spark [GOLD - MYSQL FINANCE/MARKETING]...
+[2026-06-15T08:04:27.374+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:04:27.374+0000] {subprocess.py:93} INFO - Initializing MySQL staging tables...
+[2026-06-15T08:04:27.374+0000] {subprocess.py:93} INFO -    => MySQL staging tables are ready.
+[2026-06-15T08:04:27.374+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:04:27.374+0000] {subprocess.py:93} INFO - [DIM_DATE] Checking and loading...
+[2026-06-15T08:04:27.374+0000] {subprocess.py:93} INFO -    => Dim Date already has data. Skipping.
+[2026-06-15T08:04:27.374+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:04:27.374+0000] {subprocess.py:93} INFO - [DIM_CAMPAIGN] Loading...
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO -    => Wrote 6 rows to staging: gold.stg_dim_campaign
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO -    => Upserted into gold.dim_campaign (6 rows affected)
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO - [FACT_MARKETING_SPEND] Processing and loading...
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO -    => Wrote 2164 rows to staging: gold.stg_fact_marketing_spend
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO -    => Upserted into gold.fact_marketing_spend (2164 rows affected)
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO - [FACT_MONTHLY_BUDGET] Processing and loading...
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO -    => Wrote 144 rows to staging: gold.stg_fact_monthly_budget
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO -    => Upserted into gold.fact_monthly_budget (144 rows affected)
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:04:27.375+0000] {subprocess.py:93} INFO - Finished Silver to Gold MySQL Finance/Marketing!
+[2026-06-15T08:04:27.777+0000] {subprocess.py:97} INFO - Command exited with return code 0
+[2026-06-15T08:04:27.778+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-06-15T08:04:27.790+0000] {taskinstance.py:1206} INFO - Marking task as SUCCESS. dag_id=bi_masan_revenue_pipeline, task_id=gold_mysql, run_id=manual__2026-06-15T07:12:06.551380+00:00, execution_date=20260615T071206, start_date=20260615T080419, end_date=20260615T080427
+[2026-06-15T08:04:27.821+0000] {local_task_job_runner.py:243} INFO - Task exited with return code 0
+[2026-06-15T08:04:27.831+0000] {taskinstance.py:3503} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2026-06-15T08:04:27.833+0000] {local_task_job_runner.py:222} INFO - ::endgroup::

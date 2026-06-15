@@ -1,0 +1,55 @@
+[2026-06-15T06:25:01.138+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-06-15T06:25:01.149+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.load_postgres manual__2026-06-15T06:24:57.529480+00:00 [queued]>
+[2026-06-15T06:25:01.152+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.load_postgres manual__2026-06-15T06:24:57.529480+00:00 [queued]>
+[2026-06-15T06:25:01.152+0000] {taskinstance.py:2306} INFO - Starting attempt 1 of 2
+[2026-06-15T06:25:01.158+0000] {taskinstance.py:2330} INFO - Executing <Task(BashOperator): load_postgres> on 2026-06-15 06:24:57.529480+00:00
+[2026-06-15T06:25:01.160+0000] {standard_task_runner.py:64} INFO - Started process 402 to run task
+[2026-06-15T06:25:01.162+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'bi_masan_revenue_pipeline', 'load_postgres', 'manual__2026-06-15T06:24:57.529480+00:00', '--job-id', '9', '--raw', '--subdir', 'DAGS_FOLDER/bi_masan_pipeline.py', '--cfg-path', '/tmp/tmp9x884y0a']
+[2026-06-15T06:25:01.163+0000] {standard_task_runner.py:91} INFO - Job 9: Subtask load_postgres
+[2026-06-15T06:25:01.182+0000] {task_command.py:426} INFO - Running <TaskInstance: bi_masan_revenue_pipeline.load_postgres manual__2026-06-15T06:24:57.529480+00:00 [running]> on host 4229d45e3c1b
+[2026-06-15T06:25:01.212+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='bi_masan_revenue_pipeline' AIRFLOW_CTX_TASK_ID='load_postgres' AIRFLOW_CTX_EXECUTION_DATE='2026-06-15T06:24:57.529480+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-06-15T06:24:57.529480+00:00'
+[2026-06-15T06:25:01.212+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-06-15T06:25:01.219+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-06-15T06:25:01.220+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'cd /opt/airflow/project && python src/load_data/load_postgres.py']
+[2026-06-15T06:25:01.224+0000] {subprocess.py:86} INFO - Output:
+[2026-06-15T06:25:01.724+0000] {subprocess.py:93} INFO - Reading Excel file...
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO - Traceback (most recent call last):
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -   File "/opt/airflow/project/src/load_data/load_postgres.py", line 102, in <module>
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -     load_sales_data("masan_case.xlsx")
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -   File "/opt/airflow/project/src/load_data/load_postgres.py", line 7, in load_sales_data
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -     df = pd.read_excel(excel_path, sheet_name='Sheet1')
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -   File "/home/airflow/.local/lib/python3.11/site-packages/pandas/io/excel/_base.py", line 495, in read_excel
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -     io = ExcelFile(
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -          ^^^^^^^^^^
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -   File "/home/airflow/.local/lib/python3.11/site-packages/pandas/io/excel/_base.py", line 1550, in __init__
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -     ext = inspect_excel_format(
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -           ^^^^^^^^^^^^^^^^^^^^^
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -   File "/home/airflow/.local/lib/python3.11/site-packages/pandas/io/excel/_base.py", line 1402, in inspect_excel_format
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -     with get_handle(
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -          ^^^^^^^^^^^
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -   File "/home/airflow/.local/lib/python3.11/site-packages/pandas/io/common.py", line 882, in get_handle
+[2026-06-15T06:25:01.725+0000] {subprocess.py:93} INFO -     handle = open(handle, ioargs.mode)
+[2026-06-15T06:25:01.726+0000] {subprocess.py:93} INFO -              ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-06-15T06:25:01.726+0000] {subprocess.py:93} INFO - FileNotFoundError: [Errno 2] No such file or directory: 'masan_case.xlsx'
+[2026-06-15T06:25:01.773+0000] {subprocess.py:97} INFO - Command exited with return code 1
+[2026-06-15T06:25:01.773+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-06-15T06:25:01.776+0000] {taskinstance.py:2905} ERROR - Task failed with exception
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.11/site-packages/airflow/models/taskinstance.py", line 465, in _execute_task
+    result = _execute_callable(context=context, **execute_callable_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.11/site-packages/airflow/models/taskinstance.py", line 432, in _execute_callable
+    return execute_callable(context=context, **execute_callable_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.11/site-packages/airflow/models/baseoperator.py", line 401, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.11/site-packages/airflow/operators/bash.py", line 243, in execute
+    raise AirflowException(
+airflow.exceptions.AirflowException: Bash command failed. The command returned a non-zero exit code 1.
+[2026-06-15T06:25:01.778+0000] {taskinstance.py:1206} INFO - Marking task as UP_FOR_RETRY. dag_id=bi_masan_revenue_pipeline, task_id=load_postgres, run_id=manual__2026-06-15T06:24:57.529480+00:00, execution_date=20260615T062457, start_date=20260615T062501, end_date=20260615T062501
+[2026-06-15T06:25:01.784+0000] {standard_task_runner.py:110} ERROR - Failed to execute job 9 for task load_postgres (Bash command failed. The command returned a non-zero exit code 1.; 402)
+[2026-06-15T06:25:01.814+0000] {local_task_job_runner.py:243} INFO - Task exited with return code 1
+[2026-06-15T06:25:01.829+0000] {taskinstance.py:3503} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-06-15T06:25:01.829+0000] {local_task_job_runner.py:222} INFO - ::endgroup::

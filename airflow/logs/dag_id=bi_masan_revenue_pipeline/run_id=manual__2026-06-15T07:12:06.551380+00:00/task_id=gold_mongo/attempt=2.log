@@ -1,0 +1,45 @@
+[2026-06-15T08:05:07.824+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-06-15T08:05:07.836+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.gold_mongo manual__2026-06-15T07:12:06.551380+00:00 [queued]>
+[2026-06-15T08:05:07.839+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.gold_mongo manual__2026-06-15T07:12:06.551380+00:00 [queued]>
+[2026-06-15T08:05:07.840+0000] {taskinstance.py:2306} INFO - Starting attempt 2 of 3
+[2026-06-15T08:05:07.846+0000] {taskinstance.py:2330} INFO - Executing <Task(BashOperator): gold_mongo> on 2026-06-15 07:12:06.551380+00:00
+[2026-06-15T08:05:07.850+0000] {standard_task_runner.py:64} INFO - Started process 20190 to run task
+[2026-06-15T08:05:07.852+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'bi_masan_revenue_pipeline', 'gold_mongo', 'manual__2026-06-15T07:12:06.551380+00:00', '--job-id', '54', '--raw', '--subdir', 'DAGS_FOLDER/bi_masan_pipeline.py', '--cfg-path', '/tmp/tmpn0mvyse_']
+[2026-06-15T08:05:07.853+0000] {standard_task_runner.py:91} INFO - Job 54: Subtask gold_mongo
+[2026-06-15T08:05:07.871+0000] {task_command.py:426} INFO - Running <TaskInstance: bi_masan_revenue_pipeline.gold_mongo manual__2026-06-15T07:12:06.551380+00:00 [running]> on host 6d0d47d20a89
+[2026-06-15T08:05:07.898+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='bi_masan_revenue_pipeline' AIRFLOW_CTX_TASK_ID='gold_mongo' AIRFLOW_CTX_EXECUTION_DATE='2026-06-15T07:12:06.551380+00:00' AIRFLOW_CTX_TRY_NUMBER='2' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-06-15T07:12:06.551380+00:00'
+[2026-06-15T08:05:07.899+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-06-15T08:05:07.905+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-06-15T08:05:07.905+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'cd /opt/airflow/project && python src/spark_jobs/gold_jobs/3_silver_to_gold_mongo.py']
+[2026-06-15T08:05:07.912+0000] {subprocess.py:86} INFO - Output:
+[2026-06-15T08:05:08.257+0000] {subprocess.py:93} INFO - /home/airflow/.local/lib/python3.11/site-packages/pyspark/bin/load-spark-env.sh: line 68: ps: command not found
+[2026-06-15T08:05:09.170+0000] {subprocess.py:93} INFO - 26/06/15 08:05:09 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+[2026-06-15T08:05:09.260+0000] {subprocess.py:93} INFO - Setting default log level to "WARN".
+[2026-06-15T08:05:09.260+0000] {subprocess.py:93} INFO - To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+[2026-06-15T08:05:17.156+0000] {subprocess.py:93} INFO - Starting Spark [GOLD - MONGO PRODUCTION/LOGISTICS]...
+[2026-06-15T08:05:17.157+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:05:17.158+0000] {subprocess.py:93} INFO - Initializing Mongo staging tables...
+[2026-06-15T08:05:17.158+0000] {subprocess.py:93} INFO -    => Mongo staging tables and indexes are ready.
+[2026-06-15T08:05:17.158+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:05:17.159+0000] {subprocess.py:93} INFO - [DIM_DATE] Checking and loading...
+[2026-06-15T08:05:17.159+0000] {subprocess.py:93} INFO -    => Dim Date already has data. Skipping.
+[2026-06-15T08:05:17.159+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:05:17.160+0000] {subprocess.py:93} INFO - [DIM_DEPARTMENT] Loading...
+[2026-06-15T08:05:17.160+0000] {subprocess.py:93} INFO -    => Wrote 6 rows to staging: gold.stg_dim_department
+[2026-06-15T08:05:17.160+0000] {subprocess.py:93} INFO -    => Upserted into gold.dim_department (6 rows affected)
+[2026-06-15T08:05:17.161+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:05:17.161+0000] {subprocess.py:93} INFO - [FACT_PRODUCTION_LOGS] Processing and loading...
+[2026-06-15T08:05:17.161+0000] {subprocess.py:93} INFO -    => Wrote 2911 rows to staging: gold.stg_fact_production_logs
+[2026-06-15T08:05:17.162+0000] {subprocess.py:93} INFO -    => Upserted into gold.fact_production_logs (2911 rows affected)
+[2026-06-15T08:05:17.162+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:05:17.162+0000] {subprocess.py:93} INFO - [FACT_LOGISTICS_COSTS] Processing and loading...
+[2026-06-15T08:05:17.162+0000] {subprocess.py:93} INFO -    => Wrote 2655 rows to staging: gold.stg_fact_logistics_costs
+[2026-06-15T08:05:17.163+0000] {subprocess.py:93} INFO -    => Upserted into gold.fact_logistics_costs (2655 rows affected)
+[2026-06-15T08:05:17.163+0000] {subprocess.py:93} INFO - 
+[2026-06-15T08:05:17.163+0000] {subprocess.py:93} INFO - Finished Silver to Gold MongoDB Production/Logistics!
+[2026-06-15T08:05:17.573+0000] {subprocess.py:97} INFO - Command exited with return code 0
+[2026-06-15T08:05:17.574+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-06-15T08:05:17.582+0000] {taskinstance.py:1206} INFO - Marking task as SUCCESS. dag_id=bi_masan_revenue_pipeline, task_id=gold_mongo, run_id=manual__2026-06-15T07:12:06.551380+00:00, execution_date=20260615T071206, start_date=20260615T080507, end_date=20260615T080517
+[2026-06-15T08:05:17.596+0000] {local_task_job_runner.py:243} INFO - Task exited with return code 0
+[2026-06-15T08:05:17.607+0000] {taskinstance.py:3503} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-06-15T08:05:17.608+0000] {local_task_job_runner.py:222} INFO - ::endgroup::

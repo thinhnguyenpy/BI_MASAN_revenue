@@ -1,0 +1,34 @@
+[2026-06-15T07:12:28.552+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-06-15T07:12:28.562+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.bronze_sales_fact manual__2026-06-15T07:12:06.551380+00:00 [queued]>
+[2026-06-15T07:12:28.565+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.bronze_sales_fact manual__2026-06-15T07:12:06.551380+00:00 [queued]>
+[2026-06-15T07:12:28.565+0000] {taskinstance.py:2306} INFO - Starting attempt 1 of 2
+[2026-06-15T07:12:28.571+0000] {taskinstance.py:2330} INFO - Executing <Task(BashOperator): bronze_sales_fact> on 2026-06-15 07:12:06.551380+00:00
+[2026-06-15T07:12:28.574+0000] {standard_task_runner.py:64} INFO - Started process 1035 to run task
+[2026-06-15T07:12:28.576+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'bi_masan_revenue_pipeline', 'bronze_sales_fact', 'manual__2026-06-15T07:12:06.551380+00:00', '--job-id', '6', '--raw', '--subdir', 'DAGS_FOLDER/bi_masan_pipeline.py', '--cfg-path', '/tmp/tmpk6ak8g7v']
+[2026-06-15T07:12:28.577+0000] {standard_task_runner.py:91} INFO - Job 6: Subtask bronze_sales_fact
+[2026-06-15T07:12:28.595+0000] {task_command.py:426} INFO - Running <TaskInstance: bi_masan_revenue_pipeline.bronze_sales_fact manual__2026-06-15T07:12:06.551380+00:00 [running]> on host 6d0d47d20a89
+[2026-06-15T07:12:28.619+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='bi_masan_revenue_pipeline' AIRFLOW_CTX_TASK_ID='bronze_sales_fact' AIRFLOW_CTX_EXECUTION_DATE='2026-06-15T07:12:06.551380+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-06-15T07:12:06.551380+00:00'
+[2026-06-15T07:12:28.619+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-06-15T07:12:28.626+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-06-15T07:12:28.626+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'cd /opt/airflow/project && python src/spark_jobs/bronze_jobs/1b_postgres_to_bronze_fact.py']
+[2026-06-15T07:12:28.632+0000] {subprocess.py:86} INFO - Output:
+[2026-06-15T07:12:28.934+0000] {subprocess.py:93} INFO - /home/airflow/.local/lib/python3.11/site-packages/pyspark/bin/load-spark-env.sh: line 68: ps: command not found
+[2026-06-15T07:12:29.671+0000] {subprocess.py:93} INFO - 26/06/15 07:12:29 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+[2026-06-15T07:12:29.751+0000] {subprocess.py:93} INFO - Setting default log level to "WARN".
+[2026-06-15T07:12:29.751+0000] {subprocess.py:93} INFO - To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+[2026-06-15T07:12:32.394+0000] {subprocess.py:93} INFO - 🚀 Đang khởi tạo Spark [BRONZE - FACTS]...
+[2026-06-15T07:12:32.395+0000] {subprocess.py:93} INFO - 
+[2026-06-15T07:12:32.395+0000] {subprocess.py:93} INFO - 📅 NGÀY THỰC THI (INGEST DATE): 2026-06-15
+[2026-06-15T07:12:32.395+0000] {subprocess.py:93} INFO - 🔄 CHẾ ĐỘ CHẠY: FULL LOAD
+[2026-06-15T07:12:32.395+0000] {subprocess.py:93} INFO - 📥 [FACT] Đang hút dữ liệu bảng ORDERS...
+[2026-06-15T07:12:32.395+0000] {subprocess.py:93} INFO - 📂 Đã lưu Bronze Partition tại: /opt/airflow/project/datalake/bronze/sales_db/orders/ingest_date=2026-06-15
+[2026-06-15T07:12:32.395+0000] {subprocess.py:93} INFO - 📥 [FACT] Đang hút dữ liệu bảng ORDER_DETAILS...
+[2026-06-15T07:12:32.395+0000] {subprocess.py:93} INFO - 📂 Đã lưu Bronze Partition tại: /opt/airflow/project/datalake/bronze/sales_db/order_details/ingest_date=2026-06-15
+[2026-06-15T07:12:32.395+0000] {subprocess.py:93} INFO - 
+[2026-06-15T07:12:32.395+0000] {subprocess.py:93} INFO - ✅ Hoàn tất Ingestion Facts!
+[2026-06-15T07:12:32.774+0000] {subprocess.py:97} INFO - Command exited with return code 0
+[2026-06-15T07:12:32.775+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-06-15T07:12:32.786+0000] {taskinstance.py:1206} INFO - Marking task as SUCCESS. dag_id=bi_masan_revenue_pipeline, task_id=bronze_sales_fact, run_id=manual__2026-06-15T07:12:06.551380+00:00, execution_date=20260615T071206, start_date=20260615T071228, end_date=20260615T071232
+[2026-06-15T07:12:32.799+0000] {local_task_job_runner.py:243} INFO - Task exited with return code 0
+[2026-06-15T07:12:32.813+0000] {taskinstance.py:3503} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2026-06-15T07:12:32.816+0000] {local_task_job_runner.py:222} INFO - ::endgroup::

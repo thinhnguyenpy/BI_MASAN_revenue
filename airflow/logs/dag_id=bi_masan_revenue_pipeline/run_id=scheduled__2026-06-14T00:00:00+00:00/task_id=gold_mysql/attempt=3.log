@@ -1,0 +1,60 @@
+[2026-06-15T07:33:41.698+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-06-15T07:33:41.711+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.gold_mysql scheduled__2026-06-14T00:00:00+00:00 [queued]>
+[2026-06-15T07:33:41.714+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: bi_masan_revenue_pipeline.gold_mysql scheduled__2026-06-14T00:00:00+00:00 [queued]>
+[2026-06-15T07:33:41.715+0000] {taskinstance.py:2306} INFO - Starting attempt 3 of 4
+[2026-06-15T07:33:41.721+0000] {taskinstance.py:2330} INFO - Executing <Task(BashOperator): gold_mysql> on 2026-06-14 00:00:00+00:00
+[2026-06-15T07:33:41.724+0000] {standard_task_runner.py:64} INFO - Started process 6505 to run task
+[2026-06-15T07:33:41.726+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'bi_masan_revenue_pipeline', 'gold_mysql', 'scheduled__2026-06-14T00:00:00+00:00', '--job-id', '22', '--raw', '--subdir', 'DAGS_FOLDER/bi_masan_pipeline.py', '--cfg-path', '/tmp/tmp4c09lmro']
+[2026-06-15T07:33:41.728+0000] {standard_task_runner.py:91} INFO - Job 22: Subtask gold_mysql
+[2026-06-15T07:33:41.749+0000] {task_command.py:426} INFO - Running <TaskInstance: bi_masan_revenue_pipeline.gold_mysql scheduled__2026-06-14T00:00:00+00:00 [running]> on host 6d0d47d20a89
+[2026-06-15T07:33:41.782+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='airflow' AIRFLOW_CTX_DAG_ID='bi_masan_revenue_pipeline' AIRFLOW_CTX_TASK_ID='gold_mysql' AIRFLOW_CTX_EXECUTION_DATE='2026-06-14T00:00:00+00:00' AIRFLOW_CTX_TRY_NUMBER='3' AIRFLOW_CTX_DAG_RUN_ID='scheduled__2026-06-14T00:00:00+00:00'
+[2026-06-15T07:33:41.782+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-06-15T07:33:41.791+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-06-15T07:33:41.792+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'cd /opt/airflow/project && python src/spark_jobs/gold_jobs/3_silver_to_gold_mysql.py']
+[2026-06-15T07:33:41.800+0000] {subprocess.py:86} INFO - Output:
+[2026-06-15T07:33:42.206+0000] {subprocess.py:93} INFO - /home/airflow/.local/lib/python3.11/site-packages/pyspark/bin/load-spark-env.sh: line 68: ps: command not found
+[2026-06-15T07:33:43.167+0000] {subprocess.py:93} INFO - 26/06/15 07:33:43 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+[2026-06-15T07:33:43.275+0000] {subprocess.py:93} INFO - Setting default log level to "WARN".
+[2026-06-15T07:33:43.275+0000] {subprocess.py:93} INFO - To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+[2026-06-15T07:33:46.496+0000] {subprocess.py:93} INFO - Starting Spark [GOLD - MYSQL FINANCE/MARKETING]...
+[2026-06-15T07:33:46.496+0000] {subprocess.py:93} INFO - 
+[2026-06-15T07:33:46.496+0000] {subprocess.py:93} INFO - Initializing MySQL staging tables...
+[2026-06-15T07:33:46.496+0000] {subprocess.py:93} INFO -    => MySQL staging tables are ready.
+[2026-06-15T07:33:46.496+0000] {subprocess.py:93} INFO - 
+[2026-06-15T07:33:46.496+0000] {subprocess.py:93} INFO - [DIM_DATE] Checking and loading...
+[2026-06-15T07:33:46.496+0000] {subprocess.py:93} INFO -    => Dim Date already has data. Skipping.
+[2026-06-15T07:33:46.496+0000] {subprocess.py:93} INFO - 
+[2026-06-15T07:33:46.496+0000] {subprocess.py:93} INFO - [DIM_CAMPAIGN] Loading...
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO -    => Wrote 6 rows to staging: gold.stg_dim_campaign
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO -    => Failed to upsert into gold.dim_campaign: there is no unique or exclusion constraint matching the ON CONFLICT specification
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO - 
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO - Traceback (most recent call last):
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO -   File "/opt/airflow/project/src/spark_jobs/gold_jobs/3_silver_to_gold_mysql.py", line 323, in <module>
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO -     load_dim_campaign()
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO -   File "/opt/airflow/project/src/spark_jobs/gold_jobs/3_silver_to_gold_mysql.py", line 211, in load_dim_campaign
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO -     upsert_to_gold(
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO -   File "/opt/airflow/project/src/spark_jobs/gold_jobs/3_silver_to_gold_mysql.py", line 96, in upsert_to_gold
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO -     cur.execute(sql)
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO - psycopg2.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+[2026-06-15T07:33:46.497+0000] {subprocess.py:93} INFO - 
+[2026-06-15T07:33:46.933+0000] {subprocess.py:97} INFO - Command exited with return code 1
+[2026-06-15T07:33:46.933+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-06-15T07:33:46.936+0000] {taskinstance.py:2905} ERROR - Task failed with exception
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.11/site-packages/airflow/models/taskinstance.py", line 465, in _execute_task
+    result = _execute_callable(context=context, **execute_callable_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.11/site-packages/airflow/models/taskinstance.py", line 432, in _execute_callable
+    return execute_callable(context=context, **execute_callable_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.11/site-packages/airflow/models/baseoperator.py", line 401, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/.local/lib/python3.11/site-packages/airflow/operators/bash.py", line 243, in execute
+    raise AirflowException(
+airflow.exceptions.AirflowException: Bash command failed. The command returned a non-zero exit code 1.
+[2026-06-15T07:33:46.938+0000] {taskinstance.py:1206} INFO - Marking task as UP_FOR_RETRY. dag_id=bi_masan_revenue_pipeline, task_id=gold_mysql, run_id=scheduled__2026-06-14T00:00:00+00:00, execution_date=20260614T000000, start_date=20260615T073341, end_date=20260615T073346
+[2026-06-15T07:33:46.942+0000] {standard_task_runner.py:110} ERROR - Failed to execute job 22 for task gold_mysql (Bash command failed. The command returned a non-zero exit code 1.; 6505)
+[2026-06-15T07:33:46.952+0000] {local_task_job_runner.py:243} INFO - Task exited with return code 1
+[2026-06-15T07:33:46.959+0000] {taskinstance.py:3503} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-06-15T07:33:46.959+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
