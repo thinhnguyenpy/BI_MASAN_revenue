@@ -282,8 +282,14 @@ def load_dim_product():
 def load_fact_sales():
     print("\n[FACT_SALES] Processing and loading...")
 
-    df_orders = spark.read.parquet(os.path.join(silver_dir, "orders"))
-    df_details = spark.read.parquet(os.path.join(silver_dir, "order_details"))
+    # Nếu chạy incremental từ Airflow, chỉ đọc partition của `target_date`
+    target_date = os.getenv("TARGET_DATE", None)
+    if target_date:
+        df_orders = spark.read.parquet(os.path.join(silver_dir, "orders", f"ingest_date={target_date}"))
+        df_details = spark.read.parquet(os.path.join(silver_dir, "order_details", f"ingest_date={target_date}"))
+    else:
+        df_orders = spark.read.parquet(os.path.join(silver_dir, "orders"))
+        df_details = spark.read.parquet(os.path.join(silver_dir, "order_details"))
 
     dim_branch = read_gold_table("gold.dim_branch").select("branch_key", "branch_id")
     dim_product = (
