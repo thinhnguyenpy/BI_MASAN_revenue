@@ -26,22 +26,21 @@ def make_fact_task(task_id: str, script_path: str, dag: DAG) -> BashOperator:
     return BashOperator(
         task_id=task_id,
         bash_command=f"""
-            cd {PROJECT_ROOT} &&
-            IS_INCREMENTAL={{{{ dag_run.conf.get('is_incremental', 'False') }}}}
-            TARGET_DATE={{{{ dag_run.conf.get('target_date', '') }}}}
+            cd {PROJECT_ROOT} && \
+            export IS_INCREMENTAL="{{{{ params.is_incremental }}}}" && \
+            export TARGET_DATE="{{{{ params.target_date }}}}" && \
             {PYTHON} {script_path}
         """,
         dag=dag,
     )
 
-
 def make_silver_sales_fact_task(dag: DAG) -> BashOperator:
     return BashOperator(
         task_id="silver_sales_fact",
         bash_command=f"""
-            cd {PROJECT_ROOT} &&
-            IS_INCREMENTAL={{{{ dag_run.conf.get('is_incremental', 'False') }}}}
-            TARGET_DATE={{{{ dag_run.conf.get('target_date', '') }}}}
+            cd {PROJECT_ROOT} && \
+            export IS_INCREMENTAL="{{{{ params.is_incremental }}}}" && \
+            export TARGET_DATE="{{{{ params.target_date }}}}" && \
             {PYTHON} src/spark_jobs/silver_jobs/2b_bronze_to_silver_fact.py
         """,
         dag=dag,
@@ -58,6 +57,10 @@ default_args = {
 with DAG(
     dag_id="bi_masan_revenue_pipeline",
     default_args=default_args,
+    params={
+        "is_incremental": "False",
+        "target_date": ""
+    },
     description="Dev DAG for BI MASAN revenue pipeline",
     start_date=datetime(2026, 1, 1),
     schedule="@daily",
