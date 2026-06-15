@@ -134,7 +134,13 @@ def ingest_facts(target_date: str):
 
 
 if __name__ == "__main__":
-    run_date = datetime.now().strftime("%Y-%m-%d")
-    ingest_facts(target_date=run_date)
+    is_inc_str = os.getenv("IS_INCREMENTAL", "False")
+    _is_incremental = is_inc_str.lower() == "true"
+
+    target_date = os.getenv("TARGET_DATE", None)
+    if target_date is None:
+        target_date = datetime.now().strftime("%Y-%m-%d")
+
+    ingest_facts(target_date=target_date)
     spark.stop()
     print("\nFinished MongoDB Fact Ingestion!")

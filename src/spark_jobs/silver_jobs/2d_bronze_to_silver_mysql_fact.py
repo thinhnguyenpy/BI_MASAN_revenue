@@ -160,6 +160,11 @@ def process_facts(is_incremental=False, target_date=None):
 
 
 if __name__ == "__main__":
-    process_facts(is_incremental=False)
+    is_inc_str = os.getenv("IS_INCREMENTAL", "False")
+    is_incremental = is_inc_str.lower() == "true"
+
+    target_date = os.getenv("TARGET_DATE", None)
+
+    process_facts(is_incremental=is_incremental, target_date=target_date)
     spark.stop()
     print("\nFinished MySQL Fact Transformation!")

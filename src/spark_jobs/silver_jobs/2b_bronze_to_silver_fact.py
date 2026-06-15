@@ -180,6 +180,13 @@ def process_facts(is_incremental=False, target_date=None):
     transform_order_details(target_date=target_date)
 
 if __name__ == "__main__":
-    process_facts(is_incremental=False)
+    # Đọc tham số từ biến môi trường do Airflow truyền vào
+    is_inc_str = os.getenv("IS_INCREMENTAL", "False")
+    is_incremental = is_inc_str.lower() == "true"
+
+    # Lấy ngày từ biến môi trường nếu có
+    target_date = os.getenv("TARGET_DATE", None)
+
+    process_facts(is_incremental=is_incremental, target_date=target_date)
     spark.stop()
     print("\n✅ Hoàn tất Silver Facts!")

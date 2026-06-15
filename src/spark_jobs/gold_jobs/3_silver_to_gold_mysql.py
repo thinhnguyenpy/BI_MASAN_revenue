@@ -316,6 +316,11 @@ def load_fact_monthly_budget():
 # 9. ENTRY POINT
 # ============================================================
 if __name__ == "__main__":
+    is_inc_str = os.getenv("IS_INCREMENTAL", "False")
+    _is_incremental = is_inc_str.lower() == "true"
+
+    target_date = os.getenv("TARGET_DATE", None)
+
     print("\nInitializing MySQL staging tables...")
     create_staging_tables()
 

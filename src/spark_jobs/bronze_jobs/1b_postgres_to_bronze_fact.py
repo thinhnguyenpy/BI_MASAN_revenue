@@ -159,7 +159,13 @@ def ingest_facts(target_date: str, is_incremental: bool = True):
             raise
 
 if __name__ == "__main__":
-    run_date = datetime.now().strftime("%Y-%m-%d")
-    ingest_facts(target_date=run_date, is_incremental=False)
+    is_inc_str = os.getenv("IS_INCREMENTAL", "False")
+    is_incremental = is_inc_str.lower() == "true"
+
+    target_date = os.getenv("TARGET_DATE", None)
+    if target_date is None:
+        target_date = datetime.now().strftime("%Y-%m-%d")
+
+    ingest_facts(target_date=target_date, is_incremental=is_incremental)
     spark.stop()
     print("\n✅ Hoàn tất Ingestion Facts!")

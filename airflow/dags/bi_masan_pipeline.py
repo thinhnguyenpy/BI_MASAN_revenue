@@ -22,6 +22,32 @@ def make_task(task_id: str, script_path: str, dag: DAG) -> BashOperator:
     )
 
 
+def make_fact_task(task_id: str, script_path: str, dag: DAG) -> BashOperator:
+    return BashOperator(
+        task_id=task_id,
+        bash_command=f"""
+            cd {PROJECT_ROOT} &&
+            IS_INCREMENTAL={{{{ dag_run.conf.get('is_incremental', 'False') }}}}
+            TARGET_DATE={{{{ dag_run.conf.get('target_date', '') }}}}
+            {PYTHON} {script_path}
+        """,
+        dag=dag,
+    )
+
+
+def make_silver_sales_fact_task(dag: DAG) -> BashOperator:
+    return BashOperator(
+        task_id="silver_sales_fact",
+        bash_command=f"""
+            cd {PROJECT_ROOT} &&
+            IS_INCREMENTAL={{{{ dag_run.conf.get('is_incremental', 'False') }}}}
+            TARGET_DATE={{{{ dag_run.conf.get('target_date', '') }}}}
+            {PYTHON} src/spark_jobs/silver_jobs/2b_bronze_to_silver_fact.py
+        """,
+        dag=dag,
+    )
+
+
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
@@ -47,7 +73,7 @@ with DAG(
         "src/spark_jobs/bronze_jobs/1a_postgres_to_bronze_dim.py",
         dag,
     )
-    bronze_sales_fact = make_task(
+    bronze_sales_fact = make_fact_task(
         "bronze_sales_fact",
         "src/spark_jobs/bronze_jobs/1b_postgres_to_bronze_fact.py",
         dag,
@@ -57,12 +83,8 @@ with DAG(
         "src/spark_jobs/silver_jobs/2a_bronze_to_silver_dim.py",
         dag,
     )
-    silver_sales_fact = make_task(
-        "silver_sales_fact",
-        "src/spark_jobs/silver_jobs/2b_bronze_to_silver_fact.py",
-        dag,
-    )
-    gold_sales = make_task(
+    silver_sales_fact = make_silver_sales_fact_task(dag)
+    gold_sales = make_fact_task(
         "gold_sales",
         "src/spark_jobs/gold_jobs/3_silver_to_gold_sales.py",
         dag,
@@ -73,7 +95,7 @@ with DAG(
         "src/spark_jobs/bronze_jobs/1c_mysql_to_bronze_dim.py",
         dag,
     )
-    bronze_mysql_fact = make_task(
+    bronze_mysql_fact = make_fact_task(
         "bronze_mysql_fact",
         "src/spark_jobs/bronze_jobs/1d_mysql_to_bronze_fact.py",
         dag,
@@ -83,12 +105,12 @@ with DAG(
         "src/spark_jobs/silver_jobs/2c_bronze_to_silver_mysql_dim.py",
         dag,
     )
-    silver_mysql_fact = make_task(
+    silver_mysql_fact = make_fact_task(
         "silver_mysql_fact",
         "src/spark_jobs/silver_jobs/2d_bronze_to_silver_mysql_fact.py",
         dag,
     )
-    gold_mysql = make_task(
+    gold_mysql = make_fact_task(
         "gold_mysql",
         "src/spark_jobs/gold_jobs/3_silver_to_gold_mysql.py",
         dag,
@@ -99,7 +121,7 @@ with DAG(
         "src/spark_jobs/bronze_jobs/1e_mongo_to_bronze_dim.py",
         dag,
     )
-    bronze_mongo_fact = make_task(
+    bronze_mongo_fact = make_fact_task(
         "bronze_mongo_fact",
         "src/spark_jobs/bronze_jobs/1f_mongo_to_bronze_fact.py",
         dag,
@@ -109,12 +131,12 @@ with DAG(
         "src/spark_jobs/silver_jobs/2e_bronze_to_silver_mongo_dim.py",
         dag,
     )
-    silver_mongo_fact = make_task(
+    silver_mongo_fact = make_fact_task(
         "silver_mongo_fact",
         "src/spark_jobs/silver_jobs/2f_bronze_to_silver_mongo_fact.py",
         dag,
     )
-    gold_mongo = make_task(
+    gold_mongo = make_fact_task(
         "gold_mongo",
         "src/spark_jobs/gold_jobs/3_silver_to_gold_mongo.py",
         dag,
