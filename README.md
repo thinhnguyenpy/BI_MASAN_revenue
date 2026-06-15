@@ -1,88 +1,49 @@
 # BI_MASAN_revenue
 # Hệ Thống ETL: Từ Kiến trúc Phân tán (PostgreSQL, MongoDB, MySQL) sang Data Warehouse
 
-Dự án này là một Data Pipeline (ETL) mô phỏng hệ thống dữ liệu doanh nghiệp đa nguồn (Multi-source Distributed System). Dữ liệu thô ban đầu (Raw Data) từ file Excel sẽ được nạp vào 3 cơ sở dữ liệu đóng vai trò là hệ thống vận hành (OLTP/Bronze Layer). Sau đó, dữ liệu sẽ được trích xuất, làm sạch và tổng hợp bằng **Apache Spark** (chuẩn bị triển khai) để tải lên **Oracle Database** (đóng vai trò là Data Warehouse) theo mô hình Star Schema.
+Dự án này là một Data Pipeline (ETL) mô phỏng hệ thống dữ liệu doanh nghiệp đa nguồn (Multi-source Distributed System). Dữ liệu thô ban đầu (Raw Data) từ file Excel sẽ được nạp vào 3 cơ sở dữ liệu đóng vai trò là hệ thống vận hành (OLTP/Bronze Layer). Sau đó, dữ liệu sẽ được trích xuất, làm sạch và tổng hợp bằng **Apache Spark** để tải lên **Oracle Database** (đóng vai trò là Data Warehouse) theo mô hình Star Schema. Toàn bộ luồng được điều phối tự động bởi **Apache Airflow**.
 
-## Kiến trúc Hệ thống nguồn (Bronze Layer)
-Hệ thống lưu trữ dữ liệu thô được chia làm 3 Domain độc lập để nhận mọi dữ liệu thực tế (bao gồm cả dữ liệu lỗi, sai định dạng):
-1. **Hệ thống Bán hàng & CRM (PostgreSQL):** Quản lý đơn hàng, khách hàng và danh mục sản phẩm.
-2. **Hệ thống Sản xuất & Vận hành (MongoDB):** Quản lý nhật ký máy móc, chi phí kho bãi theo cấu trúc NoSQL.
-3. **Hệ thống Tài chính & Marketing (MySQL):** Quản lý ngân sách theo tháng và chi phí chạy quảng cáo theo ngày.
+---
+
+## Kiến trúc Hệ thống
+
+### Hệ thống nguồn (Bronze Layer)
+Dữ liệu thô được chia làm 3 Domain độc lập, lưu trữ mọi dữ liệu thực tế (bao gồm cả dữ liệu lỗi, sai định dạng):
+
+| # | Domain | Database | Nội dung |
+|---|--------|----------|----------|
+| 1 | Bán hàng & CRM | **PostgreSQL** | Đơn hàng, khách hàng, danh mục sản phẩm |
+| 2 | Sản xuất & Vận hành | **MongoDB** | Nhật ký máy móc, chi phí kho bãi (NoSQL) |
+| 3 | Tài chính & Marketing | **MySQL** | Ngân sách theo tháng, chi phí quảng cáo theo ngày |
+
+### Data Lake (Medallion Architecture)
+Dữ liệu được tổ chức theo kiến trúc Medallion với các file **Parquet**:
+
+```text
+datalake/
+├── bronze/    # Raw Data      — Dữ liệu thô hút nguyên bản từ 3 Database (lưu vết lịch sử)
+├── silver/    # Cleansed Data — Dữ liệu đã ép kiểu, làm sạch rác, xử lý Null
+└── gold/      # Aggregated    — Dữ liệu Star Schema sẵn sàng cho BI
+```
 
 ---
 
 ## Yêu cầu hệ thống (Prerequisites)
-Trước khi bắt đầu, đảm bảo máy tính của bạn đã cài đặt:
-* **Docker** và **Docker Compose**
-* **Python** (phiên bản 3.8 trở lên)
+
+Trước khi bắt đầu, đảm bảo máy tính đã cài đặt:
+
+- **Docker** và **Docker Compose**
+- **Python** 3.8 trở lên
+- File JAR driver: `jars/postgresql-42.7.3.jar`
 
 ---
 
-## Hướng dẫn cài đặt và chạy dự án
+## Hướng dẫn thiết lập môi trường (Dev/Test)
 
-### Bước 1: Khởi chạy cụm Database bằng Docker
-Hệ thống sử dụng Docker để dựng đồng thời PostgreSQL, MongoDB và MySQL cục bộ cùng các script tự động khởi tạo bảng (`init-*.sql`, `init-mongo.js`).
-Mở terminal tại thư mục chứa file `docker-compose.yml` và chạy lệnh sau (thêm tham số `-d` để chạy ngầm):
+### Bước 1: Cấu hình hệ thống
 
-```bash
-# Xóa rác cũ nếu có (Chỉ dùng khi cần reset sạch data)
-# docker compose down -v 
-# sudo rm -rf ./data
+**1. Tạo file `.env`** tại thư mục gốc của project:
 
-# Khởi chạy toàn bộ hệ thống
-docker compose up -d
-
-### Bước 2: Thiết lập Môi trường Python
-Tạo và kích hoạt môi trường ảo (Virtual Environment) để cài đặt các thư viện cần thiết mà không ảnh hưởng đến máy tính thật.
-
-**Trên Windows:**
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-**Trên Linux / MacOS (Ubuntu):**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-**Cài đặt các thư viện (Dependencies):**
-Sau khi môi trường ảo đã được kích hoạt (có chữ `(venv)` ở đầu dòng lệnh), tiến hành cài đặt thư viện từ file `requirements.txt`:
-```bash
-pip install -r requirements.txt
-```
-
----
-
-### Bước 3: Nạp dữ liệu thô vào Hệ thống (Data Seeding)
-Chạy các script Python đã được chuẩn bị sẵn để mô phỏng quá trình đổ dữ liệu rác (Raw Data) từ file Excel (`masan_case.xlsx`) vào 3 cơ sở dữ liệu nguồn.
-
-*(Lưu ý: Các cảnh báo UserWarning liên quan đến định dạng ngày tháng của thư viện Pandas là bình thường và không ảnh hưởng đến quá trình nạp dữ liệu vì hệ thống cố tình lưu trữ dữ liệu dưới dạng chuỗi Text).*
-
-**1. Nạp hệ thống Bán hàng (PostgreSQL):**
-```bash
-python load_data/load_postgres.py
-# Output mong đợi: PostgreSQL Sales Data Loading completed successfully!
-```
-
-**2. Nạp hệ thống Tài chính (MySQL):**
-```bash
-python load_data/load_mysql.py
-# Output mong đợi: MySQL Finance Data Loading completed successfully!
-```
-
-**3. Nạp hệ thống Sản xuất (MongoDB):**
-```bash
-python load_data/load_mongo.py
-# Output mong đợi: MongoDB Production Data Loading completed successfully!
-```
-
-### Bước 4: Cấu hình biến môi trường (.env) và Java (Dành cho Spark)
-Hệ thống sử dụng file `.env` để bảo mật thông tin kết nối cơ sở dữ liệu thay vì ghi trực tiếp vào mã nguồn.
-
-**1. Tạo file `.env`:**
-Tại thư mục gốc của project, tạo một file tên là `.env` và dán nội dung sau vào:
 ```env
 # Kết nối PostgreSQL (Bán hàng)
 POSTGRES_HOST=localhost
@@ -90,12 +51,22 @@ POSTGRES_PORT=5432
 POSTGRES_DB=sales_db
 POSTGRES_USER=admin
 POSTGRES_PASSWORD=admin_password
-```
-*(Lưu ý: Nếu sau này triển khai Spark bên trong Docker, hãy đổi `POSTGRES_HOST` thành `stg_postgres_sales`)*.
 
-**2. Cấu hình Java (Bắt buộc cho PySpark):**
-Mặc dù viết bằng Python, nhân cốt lõi của Spark yêu cầu phải có Java Runtime Environment.
-Trên Ubuntu, tiến hành cài đặt và cấu hình đường dẫn `JAVA_HOME` bằng lệnh sau:
+# Kết nối MongoDB (Sản xuất)
+MONGO_URI=mongodb://admin:admin_password@localhost:27017/
+
+# Kết nối MySQL (Tài chính)
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_DB=finance_db
+MYSQL_USER=admin
+MYSQL_PASSWORD=admin_password
+```
+
+> **Lưu ý:** Nếu triển khai Spark bên trong Docker, đổi `POSTGRES_HOST` thành tên service tương ứng (ví dụ: `stg_postgres_sales`).
+
+**2. Cấu hình Java** (bắt buộc cho PySpark — chỉ cần trên Ubuntu/Linux):
+
 ```bash
 sudo apt update
 sudo apt install openjdk-17-jre-headless
@@ -103,51 +74,187 @@ export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 export PATH=$JAVA_HOME/bin:$PATH
 ```
 
----
+**3. Đảm bảo file JAR driver** đã có sẵn tại đường dẫn:
 
-## Giai đoạn 3: Trích xuất và Làm sạch dữ liệu (Data Lake - Medallion Architecture)
-Hệ thống lưu trữ dữ liệu lớn (Data Lake) được thiết kế theo kiến trúc Medallion, tổ chức thành các thư mục vật lý chứa file **Parquet**.
-
-```text
-datalake/
-├── bronze/    # Raw Data: Dữ liệu thô hút nguyên bản từ 3 Database (Lưu vết lịch sử).
-├── silver/    # Cleansed Data: Dữ liệu đã được ép kiểu, làm sạch rác, xử lý Null.
-└── gold/      # Aggregated Data: Dữ liệu gộp/Star Schema sẵn sàng cho BI (Sắp triển khai).
+```
+jars/postgresql-42.7.3.jar
 ```
 
-### 3.1. Hút dữ liệu thô vào lớp Bronze (Ingestion)
-Lớp Bronze chỉ làm duy nhất một nhiệm vụ: Kết nối JDBC đến hệ thống nguồn, kéo nhanh toàn bộ dữ liệu và lưu xuống dạng Parquet để trả lại tài nguyên cho Database nguồn. 
+---
 
-Kích hoạt môi trường ảo và chạy các script trích xuất:
+### Bước 2: Khởi chạy hạ tầng
+
+```bash
+# Khởi chạy cụm Database (Source & Warehouse)
+docker compose up -d
+
+# Khởi chạy Airflow
+docker compose -f docker-compose.airflow.yml up -d
+```
+
+> Hệ thống sử dụng Docker để dựng đồng thời PostgreSQL, MongoDB và MySQL cùng các script tự động khởi tạo bảng (`init-*.sql`, `init-mongo.js`).
+
+**Lấy mật khẩu đăng nhập Airflow (lần đầu khởi động):**
+
+```bash
+docker logs bi_masan_airflow | grep "password"
+```
+
+Truy cập giao diện Airflow tại: `http://localhost:8080`
+
+---
+
+### Bước 3: Thiết lập môi trường Python
+
+Tạo và kích hoạt Virtual Environment:
+
+**Trên Windows:**
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+**Trên Linux / macOS:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Cài đặt các thư viện:
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### Bước 4: Nạp dữ liệu giả vào hệ thống (Data Seeding)
+
+Chạy một lần để mồi dữ liệu từ file Excel (`masan_case.xlsx`) vào 3 database nguồn:
+
+```bash
+# Nạp hệ thống Bán hàng (PostgreSQL)
+python src/load_data/load_postgres.py
+# Output mong đợi: PostgreSQL Sales Data Loading completed successfully!
+
+# Nạp hệ thống Tài chính (MySQL)
+python src/load_data/load_mysql.py
+# Output mong đợi: MySQL Finance Data Loading completed successfully!
+
+# Nạp hệ thống Sản xuất (MongoDB)
+python src/load_data/load_mongo.py
+# Output mong đợi: MongoDB Production Data Loading completed successfully!
+```
+
+> **Lưu ý:** Các cảnh báo `UserWarning` liên quan đến định dạng ngày tháng của Pandas là bình thường — hệ thống cố tình lưu dữ liệu thô dưới dạng Text.
+
+---
+
+## Luồng ETL (Pipeline)
+
+### Giai đoạn 1 — Bronze: Hút dữ liệu thô (Ingestion)
+
+Spark kết nối JDBC đến database nguồn, kéo toàn bộ dữ liệu và lưu xuống Parquet. Lớp Bronze chỉ làm duy nhất một việc: sao chép nguyên bản, không transform.
+
 ```bash
 python spark_jobs/1a_postgres_to_bronze_dim.py
-
 python spark_jobs/1b_postgres_to_bronze_fact.py
 ```
 
-### 3.2. Làm sạch dữ liệu vào lớp Silver (Transformation)
-Ở bước này, Spark hoàn toàn không kết nối đến Database nguồn. Hệ thống đọc file Parquet từ lớp Bronze lên RAM, thực hiện chuẩn hóa:
+### Giai đoạn 2 — Silver: Làm sạch dữ liệu (Transformation)
 
-* **Xử lý rác:** Loại bỏ các chuỗi "NaN", "N/A", khoảng trắng vô nghĩa.
-* **Ép kiểu (Type Casting):** Chuyển đổi dữ liệu từ dạng chuỗi (`String`) sang các kiểu định dạng chuẩn (`Decimal`, `Date`) để phục vụ tính toán.
-* **Loại bỏ trùng lặp:** Xóa bỏ các dòng thiếu khóa chính hoặc bị trùng (Duplicate).
+Spark đọc Parquet từ Bronze (không kết nối lại database nguồn), thực hiện:
+
+- **Xử lý rác:** Loại bỏ chuỗi `"NaN"`, `"N/A"`, khoảng trắng vô nghĩa
+- **Ép kiểu (Type Casting):** Chuyển từ `String` sang `Decimal`, `Date`,...
+- **Loại bỏ trùng lặp:** Xóa các dòng thiếu khóa chính hoặc bị Duplicate
 
 ```bash
-# Làm sạch các bảng Danh mục
+# Làm sạch các bảng Danh mục (Dimension)
 python spark_jobs/silver_jobs/2a_bronze_to_silver_dim.py
 
-# Làm sạch các bảng Sự kiện
+# Làm sạch các bảng Sự kiện (Fact)
 python spark_jobs/silver_jobs/2b_bronze_to_silver_fact.py
 ```
 
-### 4. Tải dữ liệu lên Data Warehouse (Lớp Gold)
-Ở bước này, Spark sẽ đọc dữ liệu đã làm sạch từ lớp Silver và tải lên hệ thống Data Warehouse (PostgreSQL) theo mô hình Sơ đồ hình sao (Star Schema), thực hiện các nghiệp vụ:
+### Giai đoạn 3 — Gold: Tải lên Data Warehouse
 
-* **Khớp khóa (Look-up Keys):** Thay thế các mã tự nhiên gốc (ví dụ: `branch_id`) bằng các khóa nhân tạo tự tăng (`branch_key`) từ các bảng Dimension.
-* **Kỹ thuật Staging:** Đẩy dữ liệu từ Spark vào các bảng tạm (Staging Tables) trên Database trước khi đưa vào bảng chính thức để đảm bảo an toàn thao tác.
-* **Nạp dữ liệu (UPSERT):** Sử dụng cơ chế `ON CONFLICT DO UPDATE` để hợp nhất dữ liệu. Hệ thống sẽ tự động cập nhật nếu khóa đã tồn tại hoặc thêm mới nếu chưa, đảm bảo tuyệt đối không lặp dữ liệu (Idempotent).
+Spark đọc dữ liệu từ Silver và nạp lên Data Warehouse theo mô hình **Star Schema**, thực hiện:
+
+- **Look-up Keys:** Thay thế mã tự nhiên (ví dụ: `branch_id`) bằng khóa nhân tạo (`branch_key`)
+- **Staging:** Đẩy vào bảng tạm trước khi đưa vào bảng chính để đảm bảo an toàn
+- **UPSERT:** Dùng `ON CONFLICT DO UPDATE` — tự động cập nhật nếu đã tồn tại, thêm mới nếu chưa có (Idempotent)
 
 ```bash
 # Khởi tạo lịch, nạp Dimensions và Fact Bán hàng
 python spark_jobs/gold_jobs/3_silver_to_gold_sales.py
+```
+
+---
+
+## Quy trình chạy ETL qua Airflow
+
+1. Truy cập `http://localhost:8080`
+2. Bật (Toggle) DAG `bi_masan_revenue_pipeline`
+3. Nhấn **Trigger DAG** để bắt đầu quá trình
+4. Nếu task báo lỗi (màu đỏ):
+   - Kiểm tra tab **Logs** của task đó
+   - Sửa lỗi code trên máy thật
+   - Nhấn **Clear** trên giao diện Airflow để chạy lại task đó mà không ảnh hưởng cả luồng
+
+---
+
+## Reset hệ thống (Dành cho Test nhiều lần)
+
+Nếu sửa code Spark hoặc muốn chạy lại luồng từ đầu, dùng quy trình "Sạch từ gốc" để tránh xung đột dữ liệu:
+
+```bash
+# 1. Dừng toàn bộ các container
+docker compose -f docker-compose.airflow.yml down
+docker compose down
+
+# 2. Xóa sạch dữ liệu đã qua xử lý (giữ nguyên Source Database)
+sudo rm -rf data/postgres_dw
+sudo rm -rf datalake/bronze/*
+sudo rm -rf datalake/silver/*
+sudo rm -rf datalake/gold/*
+
+# 3. Khởi động lại hạ tầng
+docker compose up -d
+docker compose -f docker-compose.airflow.yml up -d
+
+# 4. Lấy lại mật khẩu Airflow
+docker logs bi_masan_airflow | grep "password"
+```
+
+> **Lưu ý:** Lệnh `docker compose down -v` và `sudo rm -rf ./data` sẽ xóa **toàn bộ** dữ liệu kể cả Source Database — chỉ dùng khi cần reset hoàn toàn từ đầu.
+
+---
+
+## Cấu trúc thư mục dự án
+
+```text
+BI_MASAN_revenue/
+├── datalake/
+│   ├── bronze/
+│   ├── silver/
+│   └── gold/
+├── jars/
+│   └── postgresql-42.7.3.jar
+├── load_data/                        # Script seeding dữ liệu thô
+│   ├── load_postgres.py
+│   ├── load_mysql.py
+│   └── load_mongo.py
+├── spark_jobs/
+│   ├── 1a_postgres_to_bronze_dim.py
+│   ├── 1b_postgres_to_bronze_fact.py
+│   ├── silver_jobs/
+│   │   ├── 2a_bronze_to_silver_dim.py
+│   │   └── 2b_bronze_to_silver_fact.py
+│   └── gold_jobs/
+│       └── 3_silver_to_gold_sales.py
+├── docker-compose.yml
+├── docker-compose.airflow.yml
+├── requirements.txt
+├── .env                              # Không commit file này lên Git!
+└── masan_case.xlsx                   # Dữ liệu nguồn
 ```
