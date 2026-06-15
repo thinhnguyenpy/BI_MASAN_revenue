@@ -68,11 +68,15 @@ def to_string(value):
     return None if value is None else str(value)
 
 
-def read_collection(collection_name: str, schema: StructType):
+def read_collection(collection_name: str, schema: StructType, target_date: str = None):
     client = MongoClient(MONGO_URI)
     try:
         db = client[MONGO_DB]
-        docs = list(db[collection_name].find({}, {"_id": 0}))
+        # Filter by LogDate if target_date provided for incremental load
+        query_filter = {}
+        if target_date:
+            query_filter = {"LogDate": target_date}
+        docs = list(db[collection_name].find(query_filter, {"_id": 0}))
     finally:
         client.close()
 
@@ -114,7 +118,7 @@ def ingest_facts(target_date: str):
     for table, collection in fact_collections.items():
         try:
             print(f"\n[FACT] Reading Mongo collection {collection}...")
-            df_raw = read_collection(collection, SCHEMAS[table])
+            df_raw = read_collection(collection, SCHEMAS[table], target_date=target_date)
             count = df_raw.count()
 
             df_partitioned = df_raw.withColumn("ingest_date", lit(target_date))
