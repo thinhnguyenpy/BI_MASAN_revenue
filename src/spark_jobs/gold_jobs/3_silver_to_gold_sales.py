@@ -324,6 +324,7 @@ def load_fact_sales():
             "quantity", "unit_price", "unit_cost",
             "revenue", "total_cost", "profit"
         )
+        .dropDuplicates(["order_id", "product_key"])
     )
 
     upsert_to_gold(
