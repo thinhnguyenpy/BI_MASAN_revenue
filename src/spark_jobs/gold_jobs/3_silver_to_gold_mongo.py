@@ -167,11 +167,20 @@ def create_staging_tables():
 # 5. DIM_DATE
 # ============================================================
 def load_dim_date():
-    print("\n[DIM_DATE] Checking and loading...")
+    print("\n[DIM_DATE] Loading (regenerating to ensure all dates)...")
 
-    if read_gold_table("gold.dim_date").limit(1).count() > 0:
-        print("   => Dim Date already has data. Skipping.")
-        return
+    # Always regenerate dim_date to ensure complete coverage
+    try:
+        conn = get_dw_conn()
+        cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS gold.dim_date CASCADE")
+        cur.execute("DROP TABLE IF EXISTS gold.stg_dim_date CASCADE")
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("   => Dropped existing dim_date for regeneration.")
+    except Exception as e:
+        print(f"   => Warning: Could not drop dim_date: {e}")
 
     df_dates = spark.sql("""
         SELECT explode(sequence(
