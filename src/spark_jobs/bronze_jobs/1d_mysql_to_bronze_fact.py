@@ -9,9 +9,9 @@ from pyspark.sql.functions import lit
 from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 
-# ============================================================
-# 1. LOAD CONFIG
-# ============================================================
+
+
+
 load_dotenv()
 DB_HOST = os.getenv("MYSQL_HOST", "stg_mysql_finance")
 DB_PORT = int(os.getenv("MYSQL_PORT", "3307"))
@@ -27,10 +27,10 @@ os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
 os.environ.setdefault("PYSPARK_DRIVER_PYTHON", sys.executable)
 
 
-# ============================================================
-# 2. SOURCE SCHEMAS
-# Numeric measure columns are read as strings so Silver can clean and cast them.
-# ============================================================
+
+
+
+
 SCHEMAS = {
     "daily_marketing_spend": StructType([
         StructField("spend_id", LongType(), True),
@@ -50,9 +50,9 @@ SCHEMAS = {
 }
 
 
-# ============================================================
-# 3. INIT SPARK
-# ============================================================
+
+
+
 print("Starting Spark [BRONZE - MYSQL FACTS]...")
 spark = (
     SparkSession.builder
@@ -64,9 +64,9 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-# ============================================================
-# 4. MYSQL READER
-# ============================================================
+
+
+
 def read_from_source(query: str, schema: StructType):
     conn = mysql.connector.connect(
         host=DB_HOST,
@@ -86,9 +86,9 @@ def read_from_source(query: str, schema: StructType):
     return spark.createDataFrame(rows, schema=schema)
 
 
-# ============================================================
-# 5. INGEST
-# ============================================================
+
+
+
 def ingest_facts(target_date: str, is_incremental: bool = True):
     print(f"\nINGEST DATE: {target_date}")
     print(f"RUN MODE: {'INCREMENTAL LOAD' if is_incremental else 'FULL LOAD'}")

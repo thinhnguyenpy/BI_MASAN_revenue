@@ -4,18 +4,18 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, trim, when
 
 
-# ============================================================
-# 1. PATH CONFIG
-# ============================================================
+
+
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
 bronze_dir = os.path.join(project_root, "datalake", "bronze", "finance_db")
 silver_dir = os.path.join(project_root, "datalake", "silver", "finance_db")
 
 
-# ============================================================
-# 2. INIT SPARK
-# ============================================================
+
+
+
 print("Starting Spark [SILVER - MYSQL DIMENSIONS]...")
 spark = (
     SparkSession.builder
@@ -26,9 +26,9 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-# ============================================================
-# 3. CLEAN HELPERS
-# ============================================================
+
+
+
 DIM_CONFIG = {
     "marketing_campaigns": {"pk": "campaign_id", "partition_by": None},
 }
@@ -47,9 +47,9 @@ def clean_string_columns(df):
     return df
 
 
-# ============================================================
-# 4. TRANSFORM
-# ============================================================
+
+
+
 def transform_dimensions():
     for table, config in DIM_CONFIG.items():
         print(f"\n[DIM] Cleaning {table.upper()}...")

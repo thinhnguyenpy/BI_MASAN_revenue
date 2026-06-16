@@ -9,9 +9,9 @@ from pyspark.sql.functions import lit
 from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 
-# ============================================================
-# 1. LOAD CONFIG
-# ============================================================
+
+
+
 load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://admin:admin_password@localhost:27017/")
 MONGO_DB = os.getenv("MONGO_DB", "production_db")
@@ -27,9 +27,9 @@ print(f"project_root : {project_root}")
 print(f"bronze_dir   : {bronze_dir}")
 
 
-# ============================================================
-# 2. INIT SPARK
-# ============================================================
+
+
+
 print("\nStarting Spark [BRONZE - MONGO DIMENSIONS]...")
 spark = (
     SparkSession.builder
@@ -41,9 +41,9 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-# ============================================================
-# 3. SOURCE SCHEMAS
-# ============================================================
+
+
+
 SCHEMAS = {
     "departments": StructType([
         StructField("department_id", LongType(), True),
@@ -53,7 +53,6 @@ SCHEMAS = {
 
 
 def read_collection(collection_name: str, schema: StructType):
-    """Read MongoDB documents and convert them into a Spark DataFrame."""
     client = MongoClient(MONGO_URI)
     try:
         db = client[MONGO_DB]
@@ -72,9 +71,9 @@ def read_collection(collection_name: str, schema: StructType):
     return spark.createDataFrame(rows, schema=schema)
 
 
-# ============================================================
-# 4. INGEST
-# ============================================================
+
+
+
 def ingest_dimensions(ingest_date: str):
     dim_collections = {
         "departments": "Departments",
@@ -115,9 +114,9 @@ def ingest_dimensions(ingest_date: str):
         raise RuntimeError(f"Some collections failed: {failed_tables}")
 
 
-# ============================================================
-# 5. ENTRY POINT
-# ============================================================
+
+
+
 if __name__ == "__main__":
     run_date = datetime.now().strftime("%Y-%m-%d")
     ingest_dimensions(ingest_date=run_date)

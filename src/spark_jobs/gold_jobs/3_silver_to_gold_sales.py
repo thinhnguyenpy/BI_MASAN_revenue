@@ -10,9 +10,9 @@ from pyspark.sql.functions import (
 )
 
 
-# ============================================================
-# 1. CONFIG
-# ============================================================
+
+
+
 load_dotenv()
 DW_HOST = os.getenv("DW_HOST", "dwh_postgres_gold")
 DW_PORT = os.getenv("DW_PORT", "5434")
@@ -27,9 +27,9 @@ silver_dir = os.path.join(project_root, "datalake", "silver", "sales_db")
 postgres_jar = os.path.join(project_root, "jars", "postgresql-42.7.3.jar")
 
 
-# ============================================================
-# 2. INIT SPARK
-# ============================================================
+
+
+
 print("Starting Spark [GOLD - SALES DATA WAREHOUSE]...")
 spark = (
     SparkSession.builder
@@ -42,11 +42,10 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-# ============================================================
-# 3. JDBC HELPERS
-# ============================================================
+
+
+
 def get_dw_conn():
-    """Create a psycopg2 connection to the Data Warehouse."""
     return psycopg2.connect(
         host=DW_HOST, port=DW_PORT,
         dbname=DW_NAME, user=DW_USER, password=DW_PASSWORD
@@ -54,7 +53,6 @@ def get_dw_conn():
 
 
 def read_gold_table(table_name):
-    """Read a Gold table into a Spark DataFrame."""
     return (
         spark.read.format("jdbc")
         .option("url", DW_JDBC_URL)
@@ -67,7 +65,6 @@ def read_gold_table(table_name):
 
 
 def write_staging(df, staging_table):
-    """Overwrite a staging table before the final upsert."""
     (
         df.write.format("jdbc")
         .option("url", DW_JDBC_URL)
@@ -81,10 +78,6 @@ def write_staging(df, staging_table):
 
 
 def upsert_to_gold(df, target_table, staging_table, conflict_keys: list, update_cols: list):
-    """
-    Pattern: write to staging, then INSERT ... ON CONFLICT DO UPDATE.
-    This keeps the job idempotent when it is re-run.
-    """
     write_staging(df, staging_table)
     print(f"   => Wrote {df.count()} rows to staging: {staging_table}")
 
@@ -114,11 +107,10 @@ def upsert_to_gold(df, target_table, staging_table, conflict_keys: list, update_
         conn.close()
 
 
-# ============================================================
-# 4. STAGING TABLES
-# ============================================================
+
+
+
 def create_staging_tables():
-    """Create sales staging tables if they do not exist."""
     sqls = [
         """CREATE TABLE IF NOT EXISTS gold.stg_dim_date (
             date_key     INT,
@@ -171,24 +163,24 @@ def create_staging_tables():
         conn.close()
 
 
-# ============================================================
-# 5. DIM_DATE
-# ============================================================
+
+
+
 def load_dim_date():
     print("\n[DIM_DATE] Loading (regenerating to ensure all dates)...")
 
-    # Always regenerate dim_date to ensure complete coverage
-    # try:
-    #     conn = get_dw_conn()
-    #     cur = conn.cursor()
-    #     cur.execute("DROP TABLE IF EXISTS gold.dim_date CASCADE")
-    #     cur.execute("DROP TABLE IF EXISTS gold.stg_dim_date CASCADE")
-    #     conn.commit()
-    #     cur.close()
-    #     conn.close()
-    #     print("   => Dropped existing dim_date for regeneration.")
-    # except Exception as e:
-    #     print(f"   => Warning: Could not drop dim_date: {e}")
+
+
+
+
+
+
+
+
+
+
+
+
 
     df_dates = spark.sql("""
         SELECT explode(sequence(
@@ -219,9 +211,9 @@ def load_dim_date():
     )
 
 
-# ============================================================
-# 6. DIM_BRANCH
-# ============================================================
+
+
+
 def load_dim_branch():
     print("\n[DIM_BRANCH] Loading...")
 
@@ -230,17 +222,17 @@ def load_dim_branch():
         .select("branch_id", "branch_name", "region")
     )
 
-    # Check for existing branches
+
     try:
         existing_branches = (
             read_gold_table("gold.dim_branch")
             .select("branch_id")
         )
-        
-        # Only keep new branches
+
+
         df_new = df_silver.join(existing_branches, "branch_id", "left_anti")
     except:
-        # If table doesn't exist yet, use all records
+
         df_new = df_silver
 
     df_new.cache()
@@ -260,9 +252,9 @@ def load_dim_branch():
     df_new.unpersist()
 
 
-# ============================================================
-# 7. DIM_PRODUCT
-# ============================================================
+
+
+
 def load_dim_product():
     print("\n[DIM_PRODUCT] Loading...")
 
@@ -306,15 +298,15 @@ def load_dim_product():
     df_new.unpersist()
 
 
-# ============================================================
-# 8. FACT_SALES
-# ============================================================
+
+
+
 def load_fact_sales():
     print("\n[FACT_SALES] Processing and loading...")
 
-    # Nếu chạy incremental từ Airflow, chỉ đọc partition của `target_date`
+
     target_date = os.getenv("TARGET_DATE", None)
-    # Handle string "None" from Airflow Jinja template
+
     if target_date and target_date.lower() != "none":
         df_orders = spark.read.parquet(os.path.join(silver_dir, "orders", f"ingest_date={target_date}"))
         df_details = spark.read.parquet(os.path.join(silver_dir, "order_details", f"ingest_date={target_date}"))
@@ -375,14 +367,14 @@ def load_fact_sales():
     )
 
 
-# ============================================================
-# 9. ENTRY POINT
-# ============================================================
+
+
+
 if __name__ == "__main__":
     is_inc_str = os.getenv("IS_INCREMENTAL", "False")
     _is_incremental = is_inc_str.lower() == "true"
 
-    # Handle string "None" from Airflow Jinja template
+
     target_date = os.getenv("TARGET_DATE", None)
     if target_date and target_date.lower() == "none":
         target_date = None

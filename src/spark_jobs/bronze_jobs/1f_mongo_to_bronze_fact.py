@@ -9,9 +9,9 @@ from pyspark.sql.functions import lit
 from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 
-# ============================================================
-# 1. LOAD CONFIG
-# ============================================================
+
+
+
 load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://admin:admin_password@localhost:27017/")
 MONGO_DB = os.getenv("MONGO_DB", "production_db")
@@ -24,10 +24,10 @@ os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
 os.environ.setdefault("PYSPARK_DRIVER_PYTHON", sys.executable)
 
 
-# ============================================================
-# 2. SOURCE SCHEMAS
-# Numeric measure columns are read as strings so Silver can clean and cast them.
-# ============================================================
+
+
+
+
 SCHEMAS = {
     "production_logs": StructType([
         StructField("log_date", StringType(), True),
@@ -47,9 +47,9 @@ SCHEMAS = {
 }
 
 
-# ============================================================
-# 3. INIT SPARK
-# ============================================================
+
+
+
 print("Starting Spark [BRONZE - MONGO FACTS]...")
 spark = (
     SparkSession.builder
@@ -61,9 +61,9 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-# ============================================================
-# 4. MONGO READER
-# ============================================================
+
+
+
 def to_string(value):
     return None if value is None else str(value)
 
@@ -72,7 +72,7 @@ def read_collection(collection_name: str, schema: StructType, target_date: str =
     client = MongoClient(MONGO_URI)
     try:
         db = client[MONGO_DB]
-        # Filter by LogDate only during incremental load
+
         query_filter = {}
         if is_incremental and target_date:
             query_filter = {"LogDate": target_date}
@@ -103,9 +103,9 @@ def read_collection(collection_name: str, schema: StructType, target_date: str =
     return spark.createDataFrame(rows, schema=schema)
 
 
-# ============================================================
-# 5. INGEST
-# ============================================================
+
+
+
 def ingest_facts(target_date: str, is_incremental: bool = True):
     fact_collections = {
         "production_logs": "ProductionLogs",

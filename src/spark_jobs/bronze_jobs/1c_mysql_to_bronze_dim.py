@@ -9,9 +9,9 @@ from pyspark.sql.functions import lit
 from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 
-# ============================================================
-# 1. LOAD CONFIG
-# ============================================================
+
+
+
 load_dotenv()
 DB_HOST = os.getenv("MYSQL_HOST", "stg_mysql_finance")
 DB_PORT = int(os.getenv("MYSQL_PORT", "3307"))
@@ -30,9 +30,9 @@ print(f"project_root : {project_root}")
 print(f"bronze_dir   : {bronze_dir}")
 
 
-# ============================================================
-# 2. INIT SPARK
-# ============================================================
+
+
+
 print("\nStarting Spark [BRONZE - MYSQL DIMENSIONS]...")
 spark = (
     SparkSession.builder
@@ -44,9 +44,9 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-# ============================================================
-# 3. MYSQL READER
-# ============================================================
+
+
+
 SCHEMAS = {
     "marketing_campaigns": StructType([
         StructField("campaign_id", LongType(), True),
@@ -57,7 +57,6 @@ SCHEMAS = {
 
 
 def read_from_source(query: str, schema: StructType):
-    """Read MySQL rows with mysql-connector and convert them to a Spark DataFrame."""
     conn = mysql.connector.connect(
         host=DB_HOST,
         port=DB_PORT,
@@ -76,9 +75,9 @@ def read_from_source(query: str, schema: StructType):
     return spark.createDataFrame(rows, schema=schema)
 
 
-# ============================================================
-# 4. INGEST
-# ============================================================
+
+
+
 def ingest_dimensions(ingest_date: str):
     dim_queries = {
         "marketing_campaigns": """
@@ -125,9 +124,9 @@ def ingest_dimensions(ingest_date: str):
         raise RuntimeError(f"Some tables failed: {failed_tables}")
 
 
-# ============================================================
-# 5. ENTRY POINT
-# ============================================================
+
+
+
 if __name__ == "__main__":
     run_date = datetime.now().strftime("%Y-%m-%d")
     ingest_dimensions(ingest_date=run_date)

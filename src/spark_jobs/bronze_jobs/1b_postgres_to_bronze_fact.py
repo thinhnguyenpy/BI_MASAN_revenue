@@ -8,9 +8,9 @@ from pyspark.sql.types import (
     LongType, StringType, DecimalType
 )
 
-# ============================================================
-# 1. NẠP CẤU HÌNH
-# ============================================================
+
+
+
 load_dotenv()
 DB_HOST     = os.getenv("POSTGRES_HOST", "stg_postgres_sales")
 DB_PORT     = os.getenv("POSTGRES_PORT", "5432")
@@ -25,11 +25,11 @@ jars_dir     = os.path.join(project_root, "jars")
 bronze_dir   = os.path.join(project_root, "datalake", "bronze", "sales_db")
 postgres_jar = os.path.join(jars_dir, "postgresql-42.7.3.jar")
 
-# ============================================================
-# 2. ĐỊNH NGHĨA SCHEMA — ép Spark KHÔNG inference từ PostgreSQL
-#    unit_price / unit_cost đọc là StringType để tránh
-#    PSQLException: Bad value for type BigDecimal : NaN
-# ============================================================
+
+
+
+
+
 SCHEMAS = {
     "orders": StructType([
         StructField("order_id",         LongType(),   True),
@@ -42,16 +42,16 @@ SCHEMAS = {
     "order_details": StructType([
         StructField("order_id",   LongType(),   True),
         StructField("product_id", StringType(), True),
-        StructField("quantity",   StringType(), True),  # DECIMAL → String, Silver cast lại
-        StructField("unit_price", StringType(), True),  # có thể chứa NaN
-        StructField("unit_cost",  StringType(), True),  # có thể chứa NaN
+        StructField("quantity",   StringType(), True),
+        StructField("unit_price", StringType(), True),
+        StructField("unit_cost",  StringType(), True),
     ]),
 }
 
-# ============================================================
-# 3. KHỞI TẠO SPARK
-# ============================================================
-print("🚀 Đang khởi tạo Spark [BRONZE - FACTS]...")
+
+
+
+print("Starting Spark [BRONZE - FACTS]...")
 spark = (
     SparkSession.builder
     .appName("Postgres_Bronze_Facts")
@@ -62,9 +62,9 @@ spark = (
 )
 spark.sparkContext.setLogLevel("ERROR")
 
-# ============================================================
-# 4. HÀM ĐỌC JDBC — nhận schema từ ngoài vào
-# ============================================================
+
+
+
 def read_from_source(query: str, schema: StructType):
     return (
         spark.read.format("jdbc")
@@ -77,12 +77,12 @@ def read_from_source(query: str, schema: StructType):
         .load()
     )
 
-# ============================================================
-# 5. HÀM INGEST
-# ============================================================
+
+
+
 def ingest_facts(target_date: str, is_incremental: bool = True):
-    print(f"\n📅 NGÀY THỰC THI (INGEST DATE): {target_date}")
-    print(f"🔄 CHẾ ĐỘ CHẠY: {'INCREMENTAL LOAD' if is_incremental else 'FULL LOAD'}")
+    print(f"\nINGEST DATE: {target_date}")
+    print(f"RUN MODE: {'INCREMENTAL LOAD' if is_incremental else 'FULL LOAD'}")
 
     if is_incremental:
         queries = {
@@ -132,12 +132,12 @@ def ingest_facts(target_date: str, is_incremental: bool = True):
             ) AS q_details_full""",
         }
 
-    # ----------------------------------------------------------
-    # Thực thi kéo & ghi từng bảng
-    # ----------------------------------------------------------
+
+
+
     for table, query in queries.items():
         try:
-            print(f"📥 [FACT] Đang hút dữ liệu bảng {table.upper()}...")
+            print(f"[FACT] Reading {table.upper()}...")
 
             df_raw = read_from_source(query, schema=SCHEMAS[table])
             count = df_raw.count()
@@ -157,10 +157,10 @@ def ingest_facts(target_date: str, is_incremental: bool = True):
                 .parquet(output_path)
             )
 
-            print(f"📂 Đã lưu Bronze Partition tại: {output_path}/ingest_date={target_date}")
+            print(f"Saved Bronze partition to: {output_path}/ingest_date={target_date}")
 
         except Exception as e:
-            print(f"❌ Lỗi khi xử lý bảng {table.upper()}: {e}")
+            print(f"Failed to process {table.upper()}: {e}")
             raise
 
 if __name__ == "__main__":
@@ -175,4 +175,4 @@ if __name__ == "__main__":
 
     ingest_facts(target_date=target_date, is_incremental=is_incremental)
     spark.stop()
-    print("\n✅ Hoàn tất Ingestion Facts!")
+    print("\nFinished Postgres Fact Ingestion!")

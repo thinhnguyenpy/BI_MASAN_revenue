@@ -8,9 +8,9 @@ from pyspark.sql.functions import col, lit, to_date, trim, when
 from pyspark.sql.types import DecimalType
 
 
-# ============================================================
-# 1. PATH CONFIG
-# ============================================================
+
+
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
 bronze_dir = os.path.join(project_root, "datalake", "bronze", "production_db")
@@ -20,9 +20,9 @@ os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
 os.environ.setdefault("PYSPARK_DRIVER_PYTHON", sys.executable)
 
 
-# ============================================================
-# 2. INIT SPARK
-# ============================================================
+
+
+
 print("Starting Spark [SILVER - MONGO FACTS]...")
 spark = (
     SparkSession.builder
@@ -35,9 +35,9 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-# ============================================================
-# 3. CLEAN HELPERS
-# ============================================================
+
+
+
 DIRTY_VALUES = ["", "null", "NULL", "N/A", "n/a", "none", "None", "NaN", "NaT"]
 
 
@@ -69,16 +69,16 @@ def normalize_non_negative_decimal(df, c_name: str):
     )
 
 
-# ============================================================
-# 4. TRANSFORM PRODUCTION LOGS
-# ============================================================
+
+
+
 def transform_production_logs(target_date=None):
     print("\n[FACT] Cleaning PRODUCTION_LOGS...")
 
     input_path = os.path.join(bronze_dir, "production_logs")
     if not os.path.exists(input_path):
         print(f"⚠️  Bronze path not found: {input_path}. Skipping production_logs transformation.")
-        return  # Skip if Bronze data doesn't exist yet
+        return
 
     try:
         if target_date:
@@ -88,7 +88,7 @@ def transform_production_logs(target_date=None):
             df_raw = spark.read.parquet(input_path)
     except Exception as e:
         print(f"⚠️  Failed to read production_logs: {e}. Bronze data may be empty or invalid. Skipping.")
-        return  # Skip if parquet is corrupted or empty
+        return
 
     count_raw = df_raw.count()
 
@@ -114,16 +114,16 @@ def transform_production_logs(target_date=None):
     print(f"[SILVER] Production Logs saved to: {output_path}")
 
 
-# ============================================================
-# 5. TRANSFORM LOGISTICS COSTS
-# ============================================================
+
+
+
 def transform_logistics_costs(target_date=None):
     print("\n[FACT] Cleaning LOGISTICS_COSTS...")
 
     input_path = os.path.join(bronze_dir, "logistics_costs")
     if not os.path.exists(input_path):
         print(f"⚠️  Bronze path not found: {input_path}. Skipping logistics_costs transformation.")
-        return  # Skip if Bronze data doesn't exist yet
+        return
 
     try:
         if target_date:
@@ -133,7 +133,7 @@ def transform_logistics_costs(target_date=None):
             df_raw = spark.read.parquet(input_path)
     except Exception as e:
         print(f"⚠️  Failed to read logistics_costs: {e}. Bronze data may be empty or invalid. Skipping.")
-        return  # Skip if parquet is corrupted or empty
+        return
 
     count_raw = df_raw.count()
 
@@ -157,9 +157,9 @@ def transform_logistics_costs(target_date=None):
     print(f"[SILVER] Logistics Costs saved to: {output_path}")
 
 
-# ============================================================
-# 6. ENTRY POINT
-# ============================================================
+
+
+
 def process_facts(is_incremental=False, target_date=None):
     if is_incremental:
         if target_date is None:
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     is_inc_str = os.getenv("IS_INCREMENTAL", "False")
     is_incremental = is_inc_str.lower() == "true"
 
-    # Handle string "None" from Airflow Jinja template
+
     target_date = os.getenv("TARGET_DATE", None)
     if target_date and target_date.lower() == "none":
         target_date = None

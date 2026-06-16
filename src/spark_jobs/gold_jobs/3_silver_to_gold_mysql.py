@@ -9,9 +9,9 @@ from pyspark.sql.functions import (
 )
 
 
-# ============================================================
-# 1. CONFIG
-# ============================================================
+
+
+
 load_dotenv()
 DW_HOST = os.getenv("DW_HOST", "dwh_postgres_gold")
 DW_PORT = os.getenv("DW_PORT", "5434")
@@ -26,9 +26,9 @@ finance_silver_dir = os.path.join(project_root, "datalake", "silver", "finance_d
 postgres_jar = os.path.join(project_root, "jars", "postgresql-42.7.3.jar")
 
 
-# ============================================================
-# 2. INIT SPARK
-# ============================================================
+
+
+
 print("Starting Spark [GOLD - MYSQL FINANCE/MARKETING]...")
 spark = (
     SparkSession.builder
@@ -41,9 +41,9 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-# ============================================================
-# 3. JDBC HELPERS
-# ============================================================
+
+
+
 def get_dw_conn():
     return psycopg2.connect(
         host=DW_HOST, port=DW_PORT,
@@ -106,9 +106,9 @@ def upsert_to_gold(df, target_table, staging_table, conflict_keys: list, update_
         conn.close()
 
 
-# ============================================================
-# 4. STAGING TABLES
-# ============================================================
+
+
+
 def create_staging_tables():
     sqls = [
         """CREATE TABLE IF NOT EXISTS gold.stg_dim_date (
@@ -153,57 +153,57 @@ def create_staging_tables():
         conn.close()
 
 
-# ============================================================
-# 5. DIM_DATE
-# ============================================================
-# def load_dim_date():
-#     print("\n[DIM_DATE] Loading (regenerating to ensure all dates)...")
-
-#     # Always regenerate dim_date to ensure complete coverage
-#     try:
-#         conn = get_dw_conn()
-#         cur = conn.cursor()
-#         cur.execute("DROP TABLE IF EXISTS gold.dim_date CASCADE")
-#         cur.execute("DROP TABLE IF EXISTS gold.stg_dim_date CASCADE")
-#         conn.commit()
-#         cur.close()
-#         conn.close()
-#         print("   => Dropped existing dim_date for regeneration.")
-#     except Exception as e:
-#         print(f"   => Warning: Could not drop dim_date: {e}")
-
-#     df_dates = spark.sql("""
-#         SELECT explode(sequence(
-#             to_date('2020-01-01'),
-#             to_date('2030-12-31'),
-#             interval 1 day
-#         )) AS full_date
-#     """)
-
-#     df_dim_date = df_dates.select(
-#         date_format(col("full_date"), "yyyyMMdd").cast("int").alias("date_key"),
-#         col("full_date"),
-#         date_format(col("full_date"), "EEEE").alias("day_of_week"),
-#         dayofmonth(col("full_date")).alias("day_of_month"),
-#         month(col("full_date")).alias("month_number"),
-#         date_format(col("full_date"), "MMMM").alias("month_name"),
-#         quarter(col("full_date")).alias("quarter"),
-#         year(col("full_date")).alias("year")
-#     )
-
-#     upsert_to_gold(
-#         df=df_dim_date,
-#         target_table="gold.dim_date",
-#         staging_table="gold.stg_dim_date",
-#         conflict_keys=["date_key"],
-#         update_cols=["full_date", "day_of_week", "day_of_month",
-#                      "month_number", "month_name", "quarter", "year"]
-#     )
 
 
-# ============================================================
-# 6. DIM_CAMPAIGN
-# ============================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def load_dim_campaign():
     print("\n[DIM_CAMPAIGN] Loading...")
 
@@ -217,17 +217,17 @@ def load_dim_campaign():
         .select("campaign_id", "campaign_name", "platform")
     )
 
-    # Check for existing campaigns
+
     try:
         existing_campaigns = (
             read_gold_table("gold.dim_campaign")
             .select("campaign_id")
         )
-        
-        # Only keep new campaigns
+
+
         df_new = df_silver.join(existing_campaigns, "campaign_id", "left_anti")
     except:
-        # If table doesn't exist yet, use all records
+
         df_new = df_silver
 
     df_new.cache()
@@ -247,13 +247,13 @@ def load_dim_campaign():
     df_new.unpersist()
 
 
-# ============================================================
-# 7. FACT_MARKETING_SPEND
-# ============================================================
+
+
+
 def load_fact_marketing_spend():
     print("\n[FACT_MARKETING_SPEND] Processing and loading...")
 
-    # read partition when incremental
+
     target_date = os.getenv("TARGET_DATE", None)
     if target_date and target_date.lower() != "none":
         input_path = os.path.join(finance_silver_dir, "daily_marketing_spend", f"ingest_date={target_date}")
@@ -311,12 +311,12 @@ def load_fact_marketing_spend():
     )
 
 
-# ============================================================
-# 8. FACT_MONTHLY_BUDGET
-# ============================================================
+
+
+
 def load_fact_monthly_budget():
     print("\n[FACT_MONTHLY_BUDGET] Processing and loading...")
-    # read partition when incremental
+
     target_date = os.getenv("TARGET_DATE", None)
     if target_date and target_date.lower() != "none":
         input_path = os.path.join(finance_silver_dir, "monthly_budgets", f"ingest_date={target_date}")
@@ -351,14 +351,14 @@ def load_fact_monthly_budget():
     )
 
 
-# ============================================================
-# 9. ENTRY POINT
-# ============================================================
+
+
+
 if __name__ == "__main__":
     is_inc_str = os.getenv("IS_INCREMENTAL", "False")
     _is_incremental = is_inc_str.lower() == "true"
 
-    # Handle string "None" from Airflow Jinja template
+
     target_date = os.getenv("TARGET_DATE", None)
     if target_date and target_date.lower() == "none":
         target_date = None
@@ -366,7 +366,7 @@ if __name__ == "__main__":
     print("\nInitializing MySQL staging tables...")
     create_staging_tables()
 
-    # load_dim_date()
+
     load_dim_campaign()
     load_fact_marketing_spend()
     load_fact_monthly_budget()
