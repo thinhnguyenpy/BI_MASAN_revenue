@@ -201,15 +201,36 @@ def load_dim_date():
         year(col("full_date")).alias("year")
     )
 
+    try:
+        existing_dates = (
+            read_gold_table("gold.dim_date")
+            .select("date_key")
+        )
+        df_new = df_dim_date.join(existing_dates, "date_key", "left_anti")
+    except Exception as e:
+        print(f"   => Could not read existing dim_date (might be first run): {e}")
+        df_new = df_dim_date
+
+    df_new.cache()
+    new_count = df_new.count()
+
+    if new_count == 0:
+        print("   => Dim Date already has data. Skipping.")
+        df_new.unpersist()
+        return
+
+    print(f"   => Found {new_count} new dates. Proceeding to upsert...")
+
     upsert_to_gold(
-        df=df_dim_date,
+        df=df_new,
         target_table="gold.dim_date",
         staging_table="gold.stg_dim_date",
         conflict_keys=["date_key"],
         update_cols=["full_date", "day_of_week", "day_of_month",
                      "month_number", "month_name", "quarter", "year"]
     )
-
+    
+    df_new.unpersist()
 
 
 
