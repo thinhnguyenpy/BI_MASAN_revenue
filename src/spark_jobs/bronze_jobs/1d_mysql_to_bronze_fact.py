@@ -147,6 +147,10 @@ def ingest_facts(target_date: str, is_incremental: bool = True):
             df_raw = read_from_source(query, SCHEMAS[table])
             count = df_raw.count()
 
+            if count == 0:
+                print(f"⚠️  No data found for table {table}. Skipping write.")
+                continue
+
             df_partitioned = df_raw.withColumn("ingest_date", lit(target_date))
             output_path = os.path.join(bronze_dir, table)
 
@@ -168,6 +172,8 @@ if __name__ == "__main__":
     is_incremental = is_inc_str.lower() == "true"
 
     target_date = os.getenv("TARGET_DATE", None)
+    if target_date and target_date.lower() == "none":
+        target_date = None
     if target_date is None:
         target_date = datetime.now().strftime("%Y-%m-%d")
 

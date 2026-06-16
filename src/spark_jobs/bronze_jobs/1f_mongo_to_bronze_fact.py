@@ -68,13 +68,13 @@ def to_string(value):
     return None if value is None else str(value)
 
 
-def read_collection(collection_name: str, schema: StructType, target_date: str = None):
+def read_collection(collection_name: str, schema: StructType, target_date: str = None, is_incremental: bool = True):
     client = MongoClient(MONGO_URI)
     try:
         db = client[MONGO_DB]
-        # Filter by LogDate if target_date provided for incremental load
+        # Filter by LogDate only during incremental load
         query_filter = {}
-        if target_date:
+        if is_incremental and target_date:
             query_filter = {"LogDate": target_date}
         docs = list(db[collection_name].find(query_filter, {"_id": 0}))
     finally:
@@ -106,20 +106,25 @@ def read_collection(collection_name: str, schema: StructType, target_date: str =
 # ============================================================
 # 5. INGEST
 # ============================================================
-def ingest_facts(target_date: str):
+def ingest_facts(target_date: str, is_incremental: bool = True):
     fact_collections = {
         "production_logs": "ProductionLogs",
         "logistics_costs": "LogisticsCosts",
     }
 
     print(f"\nINGEST DATE: {target_date}")
+    print(f"RUN MODE: {'INCREMENTAL LOAD' if is_incremental else 'FULL LOAD'}")
     print(f"Collections: {list(fact_collections.values())}")
 
     for table, collection in fact_collections.items():
         try:
             print(f"\n[FACT] Reading Mongo collection {collection}...")
-            df_raw = read_collection(collection, SCHEMAS[table], target_date=target_date)
+            df_raw = read_collection(collection, SCHEMAS[table], target_date=target_date, is_incremental=is_incremental)
             count = df_raw.count()
+
+            if count == 0:
+                print(f"⚠️  No data found in collection {collection}. Skipping write.")
+                continue
 
             df_partitioned = df_raw.withColumn("ingest_date", lit(target_date))
             output_path = os.path.join(bronze_dir, table)
@@ -142,9 +147,11 @@ if __name__ == "__main__":
     _is_incremental = is_inc_str.lower() == "true"
 
     target_date = os.getenv("TARGET_DATE", None)
+    if target_date and target_date.lower() == "none":
+        target_date = None
     if target_date is None:
         target_date = datetime.now().strftime("%Y-%m-%d")
 
-    ingest_facts(target_date=target_date)
+    ingest_facts(target_date=target_date, is_incremental=_is_incremental)
     spark.stop()
     print("\nFinished MongoDB Fact Ingestion!")

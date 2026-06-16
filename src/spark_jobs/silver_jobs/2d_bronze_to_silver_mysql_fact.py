@@ -59,13 +59,18 @@ def transform_daily_marketing_spend(target_date=None):
 
     input_path = os.path.join(bronze_dir, "daily_marketing_spend")
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"Bronze path not found: {input_path}")
+        print(f"⚠️  Bronze path not found: {input_path}. Skipping daily_marketing_spend transformation.")
+        return  # Skip if Bronze data doesn't exist yet
 
-    if target_date:
-        df_raw = spark.read.parquet(os.path.join(input_path, f"ingest_date={target_date}"))
-        df_raw = df_raw.withColumn("ingest_date", lit(target_date))
-    else:
-        df_raw = spark.read.parquet(input_path)
+    try:
+        if target_date:
+            df_raw = spark.read.parquet(os.path.join(input_path, f"ingest_date={target_date}"))
+            df_raw = df_raw.withColumn("ingest_date", lit(target_date))
+        else:
+            df_raw = spark.read.parquet(input_path)
+    except Exception as e:
+        print(f"⚠️  Failed to read daily_marketing_spend: {e}. Bronze data may be empty or invalid. Skipping.")
+        return  # Skip if parquet is corrupted or empty
 
     count_raw = df_raw.count()
 
@@ -102,13 +107,18 @@ def transform_monthly_budgets(target_date=None):
 
     input_path = os.path.join(bronze_dir, "monthly_budgets")
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"Bronze path not found: {input_path}")
+        print(f"⚠️  Bronze path not found: {input_path}. Skipping monthly_budgets transformation.")
+        return  # Skip if Bronze data doesn't exist yet
 
-    if target_date:
-        df_raw = spark.read.parquet(os.path.join(input_path, f"ingest_date={target_date}"))
-        df_raw = df_raw.withColumn("ingest_date", lit(target_date))
-    else:
-        df_raw = spark.read.parquet(input_path)
+    try:
+        if target_date:
+            df_raw = spark.read.parquet(os.path.join(input_path, f"ingest_date={target_date}"))
+            df_raw = df_raw.withColumn("ingest_date", lit(target_date))
+        else:
+            df_raw = spark.read.parquet(input_path)
+    except Exception as e:
+        print(f"⚠️  Failed to read monthly_budgets: {e}. Bronze data may be empty or invalid. Skipping.")
+        return  # Skip if parquet is corrupted or empty
 
     count_raw = df_raw.count()
 
@@ -163,7 +173,10 @@ if __name__ == "__main__":
     is_inc_str = os.getenv("IS_INCREMENTAL", "False")
     is_incremental = is_inc_str.lower() == "true"
 
+    # Handle string "None" from Airflow Jinja template
     target_date = os.getenv("TARGET_DATE", None)
+    if target_date and target_date.lower() == "none":
+        target_date = None
 
     process_facts(is_incremental=is_incremental, target_date=target_date)
     spark.stop()

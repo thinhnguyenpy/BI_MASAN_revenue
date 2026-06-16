@@ -53,18 +53,23 @@ def transform_orders(target_date=None):
 
     input_path = os.path.join(bronze_dir, "orders")
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"❌ Không tìm thấy Bronze path: {input_path}")
+        print(f"⚠️  Bronze path not found: {input_path}. Skipping orders transformation.")
+        return  # Skip if Bronze data doesn't exist yet
 
-    # Đọc từ Bronze — có thể filter partition nếu incremental
-    if target_date:
-        df_raw = spark.read.parquet(
-            os.path.join(input_path, f"ingest_date={target_date}")
-        )
-        # Thêm lại cột ingest_date vì đọc partition cụ thể sẽ mất cột này
-        from pyspark.sql.functions import lit
-        df_raw = df_raw.withColumn("ingest_date", lit(target_date))
-    else:
-        df_raw = spark.read.parquet(input_path)
+    try:
+        # Đọc từ Bronze — có thể filter partition nếu incremental
+        if target_date:
+            df_raw = spark.read.parquet(
+                os.path.join(input_path, f"ingest_date={target_date}")
+            )
+            # Thêm lại cột ingest_date vì đọc partition cụ thể sẽ mất cột này
+            from pyspark.sql.functions import lit
+            df_raw = df_raw.withColumn("ingest_date", lit(target_date))
+        else:
+            df_raw = spark.read.parquet(input_path)
+    except Exception as e:
+        print(f"⚠️  Failed to read orders: {e}. Bronze data may be empty or invalid. Skipping.")
+        return  # Skip if parquet is corrupted or empty
 
     count_raw = df_raw.count()
 
@@ -104,16 +109,21 @@ def transform_order_details(target_date=None):
 
     input_path = os.path.join(bronze_dir, "order_details")
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"❌ Không tìm thấy Bronze path: {input_path}")
+        print(f"⚠️  Bronze path not found: {input_path}. Skipping order_details transformation.")
+        return  # Skip if Bronze data doesn't exist yet
 
-    if target_date:
-        df_raw = spark.read.parquet(
-            os.path.join(input_path, f"ingest_date={target_date}")
-        )
-        from pyspark.sql.functions import lit
-        df_raw = df_raw.withColumn("ingest_date", lit(target_date))
-    else:
-        df_raw = spark.read.parquet(input_path)
+    try:
+        if target_date:
+            df_raw = spark.read.parquet(
+                os.path.join(input_path, f"ingest_date={target_date}")
+            )
+            from pyspark.sql.functions import lit
+            df_raw = df_raw.withColumn("ingest_date", lit(target_date))
+        else:
+            df_raw = spark.read.parquet(input_path)
+    except Exception as e:
+        print(f"⚠️  Failed to read order_details: {e}. Bronze data may be empty or invalid. Skipping.")
+        return  # Skip if parquet is corrupted or empty
 
     count_raw = df_raw.count()
 
@@ -185,7 +195,10 @@ if __name__ == "__main__":
     is_incremental = is_inc_str.lower() == "true"
 
     # Lấy ngày từ biến môi trường nếu có
+    # Handle string "None" from Airflow Jinja template
     target_date = os.getenv("TARGET_DATE", None)
+    if target_date and target_date.lower() == "none":
+        target_date = None
 
     process_facts(is_incremental=is_incremental, target_date=target_date)
     spark.stop()

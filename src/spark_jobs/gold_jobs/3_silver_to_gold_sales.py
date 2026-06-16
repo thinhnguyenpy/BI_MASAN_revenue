@@ -284,7 +284,8 @@ def load_fact_sales():
 
     # Nếu chạy incremental từ Airflow, chỉ đọc partition của `target_date`
     target_date = os.getenv("TARGET_DATE", None)
-    if target_date:
+    # Handle string "None" from Airflow Jinja template
+    if target_date and target_date.lower() != "none":
         df_orders = spark.read.parquet(os.path.join(silver_dir, "orders", f"ingest_date={target_date}"))
         df_details = spark.read.parquet(os.path.join(silver_dir, "order_details", f"ingest_date={target_date}"))
     else:
@@ -351,7 +352,10 @@ if __name__ == "__main__":
     is_inc_str = os.getenv("IS_INCREMENTAL", "False")
     _is_incremental = is_inc_str.lower() == "true"
 
+    # Handle string "None" from Airflow Jinja template
     target_date = os.getenv("TARGET_DATE", None)
+    if target_date and target_date.lower() == "none":
+        target_date = None
 
     print("\nInitializing Sales staging tables...")
     create_staging_tables()

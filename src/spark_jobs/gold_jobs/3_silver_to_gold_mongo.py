@@ -238,7 +238,7 @@ def load_fact_production_logs():
     print("\n[FACT_PRODUCTION_LOGS] Processing and loading...")
     # read partition when incremental
     target_date = os.getenv("TARGET_DATE", None)
-    if target_date:
+    if target_date and target_date.lower() != "none":
         input_path = os.path.join(production_silver_dir, "production_logs", f"ingest_date={target_date}")
     else:
         input_path = os.path.join(production_silver_dir, "production_logs")
@@ -320,7 +320,7 @@ def load_fact_logistics_costs():
     print("\n[FACT_LOGISTICS_COSTS] Processing and loading...")
     # read partition when incremental
     target_date = os.getenv("TARGET_DATE", None)
-    if target_date:
+    if target_date and target_date.lower() != "none":
         input_path = os.path.join(production_silver_dir, "logistics_costs", f"ingest_date={target_date}")
     else:
         input_path = os.path.join(production_silver_dir, "logistics_costs")
@@ -375,7 +375,10 @@ if __name__ == "__main__":
     is_inc_str = os.getenv("IS_INCREMENTAL", "False")
     _is_incremental = is_inc_str.lower() == "true"
 
+    # Handle string "None" from Airflow Jinja template
     target_date = os.getenv("TARGET_DATE", None)
+    if target_date and target_date.lower() == "none":
+        target_date = None
 
     print("\nInitializing Mongo staging tables...")
     create_staging_tables()

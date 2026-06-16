@@ -225,7 +225,7 @@ def load_fact_marketing_spend():
 
     # read partition when incremental
     target_date = os.getenv("TARGET_DATE", None)
-    if target_date:
+    if target_date and target_date.lower() != "none":
         input_path = os.path.join(finance_silver_dir, "daily_marketing_spend", f"ingest_date={target_date}")
     else:
         input_path = os.path.join(finance_silver_dir, "daily_marketing_spend")
@@ -288,7 +288,7 @@ def load_fact_monthly_budget():
     print("\n[FACT_MONTHLY_BUDGET] Processing and loading...")
     # read partition when incremental
     target_date = os.getenv("TARGET_DATE", None)
-    if target_date:
+    if target_date and target_date.lower() != "none":
         input_path = os.path.join(finance_silver_dir, "monthly_budgets", f"ingest_date={target_date}")
     else:
         input_path = os.path.join(finance_silver_dir, "monthly_budgets")
@@ -328,7 +328,10 @@ if __name__ == "__main__":
     is_inc_str = os.getenv("IS_INCREMENTAL", "False")
     _is_incremental = is_inc_str.lower() == "true"
 
+    # Handle string "None" from Airflow Jinja template
     target_date = os.getenv("TARGET_DATE", None)
+    if target_date and target_date.lower() == "none":
+        target_date = None
 
     print("\nInitializing MySQL staging tables...")
     create_staging_tables()

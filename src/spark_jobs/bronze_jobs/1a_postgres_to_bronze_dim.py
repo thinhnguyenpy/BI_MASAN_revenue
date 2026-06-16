@@ -11,8 +11,8 @@ load_dotenv()
 DB_HOST     = os.getenv("POSTGRES_HOST", "stg_postgres_sales")
 DB_PORT     = os.getenv("POSTGRES_PORT", "5432")
 DB_NAME     = os.getenv("POSTGRES_DB",   "sales_db")
-DB_USER     = os.getenv("POSTGRES_USER")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+DB_USER     = os.getenv("POSTGRES_USER", "admin")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "admin_password")
 JDBC_URL    = f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 # File nằm ở: src/spark_jobs/bronze_jobs/1a_postgres_to_bronze_dim.py
