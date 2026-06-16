@@ -166,49 +166,49 @@ def create_staging_tables():
 # ============================================================
 # 5. DIM_DATE
 # ============================================================
-def load_dim_date():
-    print("\n[DIM_DATE] Loading (regenerating to ensure all dates)...")
+# def load_dim_date():
+#     print("\n[DIM_DATE] Loading (regenerating to ensure all dates)...")
 
-    # Always regenerate dim_date to ensure complete coverage
-    try:
-        conn = get_dw_conn()
-        cur = conn.cursor()
-        cur.execute("DROP TABLE IF EXISTS gold.dim_date CASCADE")
-        cur.execute("DROP TABLE IF EXISTS gold.stg_dim_date CASCADE")
-        conn.commit()
-        cur.close()
-        conn.close()
-        print("   => Dropped existing dim_date for regeneration.")
-    except Exception as e:
-        print(f"   => Warning: Could not drop dim_date: {e}")
+#     # Always regenerate dim_date to ensure complete coverage
+#     try:
+#         conn = get_dw_conn()
+#         cur = conn.cursor()
+#         cur.execute("DROP TABLE IF EXISTS gold.dim_date CASCADE")
+#         cur.execute("DROP TABLE IF EXISTS gold.stg_dim_date CASCADE")
+#         conn.commit()
+#         cur.close()
+#         conn.close()
+#         print("   => Dropped existing dim_date for regeneration.")
+#     except Exception as e:
+#         print(f"   => Warning: Could not drop dim_date: {e}")
 
-    df_dates = spark.sql("""
-        SELECT explode(sequence(
-            to_date('2020-01-01'),
-            to_date('2030-12-31'),
-            interval 1 day
-        )) AS full_date
-    """)
+#     df_dates = spark.sql("""
+#         SELECT explode(sequence(
+#             to_date('2020-01-01'),
+#             to_date('2030-12-31'),
+#             interval 1 day
+#         )) AS full_date
+#     """)
 
-    df_dim_date = df_dates.select(
-        date_format(col("full_date"), "yyyyMMdd").cast("int").alias("date_key"),
-        col("full_date"),
-        date_format(col("full_date"), "EEEE").alias("day_of_week"),
-        dayofmonth(col("full_date")).alias("day_of_month"),
-        month(col("full_date")).alias("month_number"),
-        date_format(col("full_date"), "MMMM").alias("month_name"),
-        quarter(col("full_date")).alias("quarter"),
-        year(col("full_date")).alias("year")
-    )
+#     df_dim_date = df_dates.select(
+#         date_format(col("full_date"), "yyyyMMdd").cast("int").alias("date_key"),
+#         col("full_date"),
+#         date_format(col("full_date"), "EEEE").alias("day_of_week"),
+#         dayofmonth(col("full_date")).alias("day_of_month"),
+#         month(col("full_date")).alias("month_number"),
+#         date_format(col("full_date"), "MMMM").alias("month_name"),
+#         quarter(col("full_date")).alias("quarter"),
+#         year(col("full_date")).alias("year")
+#     )
 
-    upsert_to_gold(
-        df=df_dim_date,
-        target_table="gold.dim_date",
-        staging_table="gold.stg_dim_date",
-        conflict_keys=["date_key"],
-        update_cols=["full_date", "day_of_week", "day_of_month",
-                     "month_number", "month_name", "quarter", "year"]
-    )
+#     upsert_to_gold(
+#         df=df_dim_date,
+#         target_table="gold.dim_date",
+#         staging_table="gold.stg_dim_date",
+#         conflict_keys=["date_key"],
+#         update_cols=["full_date", "day_of_week", "day_of_month",
+#                      "month_number", "month_name", "quarter", "year"]
+#     )
 
 
 # ============================================================
@@ -392,7 +392,7 @@ if __name__ == "__main__":
     print("\nInitializing Mongo staging tables...")
     create_staging_tables()
 
-    load_dim_date()
+    # load_dim_date()
     load_dim_department()
     load_fact_production_logs()
     load_fact_logistics_costs()
