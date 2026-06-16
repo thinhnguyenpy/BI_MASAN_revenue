@@ -230,13 +230,34 @@ def load_dim_branch():
         .select("branch_id", "branch_name", "region")
     )
 
+    # Check for existing branches
+    try:
+        existing_branches = (
+            read_gold_table("gold.dim_branch")
+            .select("branch_id")
+        )
+        
+        # Only keep new branches
+        df_new = df_silver.join(existing_branches, "branch_id", "left_anti")
+    except:
+        # If table doesn't exist yet, use all records
+        df_new = df_silver
+
+    df_new.cache()
+    count = df_new.count()
+    if count == 0:
+        print("   => No new branches.")
+        df_new.unpersist()
+        return
+
     upsert_to_gold(
-        df=df_silver,
+        df=df_new,
         target_table="gold.dim_branch",
         staging_table="gold.stg_dim_branch",
         conflict_keys=["branch_id"],
         update_cols=["branch_name", "region"]
     )
+    df_new.unpersist()
 
 
 # ============================================================

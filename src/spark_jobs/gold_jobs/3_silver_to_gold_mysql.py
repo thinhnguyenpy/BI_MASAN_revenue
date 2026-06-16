@@ -217,13 +217,34 @@ def load_dim_campaign():
         .select("campaign_id", "campaign_name", "platform")
     )
 
+    # Check for existing campaigns
+    try:
+        existing_campaigns = (
+            read_gold_table("gold.dim_campaign")
+            .select("campaign_id")
+        )
+        
+        # Only keep new campaigns
+        df_new = df_silver.join(existing_campaigns, "campaign_id", "left_anti")
+    except:
+        # If table doesn't exist yet, use all records
+        df_new = df_silver
+
+    df_new.cache()
+    count = df_new.count()
+    if count == 0:
+        print("   => No new campaigns.")
+        df_new.unpersist()
+        return
+
     upsert_to_gold(
-        df=df_silver,
+        df=df_new,
         target_table="gold.dim_campaign",
         staging_table="gold.stg_dim_campaign",
         conflict_keys=["campaign_id"],
         update_cols=["campaign_name", "platform"]
     )
+    df_new.unpersist()
 
 
 # ============================================================

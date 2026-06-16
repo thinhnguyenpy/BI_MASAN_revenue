@@ -227,13 +227,34 @@ def load_dim_department():
         .select("department_id", "department_name")
     )
 
+    # Check for existing departments
+    try:
+        existing_departments = (
+            read_gold_table("gold.dim_department")
+            .select("department_id")
+        )
+        
+        # Only keep new departments
+        df_new = df_silver.join(existing_departments, "department_id", "left_anti")
+    except:
+        # If table doesn't exist yet, use all records
+        df_new = df_silver
+
+    df_new.cache()
+    count = df_new.count()
+    if count == 0:
+        print("   => No new departments.")
+        df_new.unpersist()
+        return
+
     upsert_to_gold(
-        df=df_silver,
+        df=df_new,
         target_table="gold.dim_department",
         staging_table="gold.stg_dim_department",
         conflict_keys=["department_id"],
         update_cols=["department_name"]
     )
+    df_new.unpersist()
 
 
 def zero_if_null(c_name: str):
