@@ -9,8 +9,6 @@ from pyspark.sql.types import (
 )
 
 
-
-
 load_dotenv()
 DB_HOST     = os.getenv("POSTGRES_HOST", "stg_postgres_sales")
 DB_PORT     = os.getenv("POSTGRES_PORT", "5432")
@@ -24,10 +22,6 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
 jars_dir     = os.path.join(project_root, "jars")
 bronze_dir   = os.path.join(project_root, "datalake", "bronze", "sales_db")
 postgres_jar = os.path.join(jars_dir, "postgresql-42.7.3.jar")
-
-
-
-
 
 
 SCHEMAS = {
@@ -49,8 +43,6 @@ SCHEMAS = {
 }
 
 
-
-
 print("Starting Spark [BRONZE - FACTS]...")
 spark = (
     SparkSession.builder
@@ -61,8 +53,6 @@ spark = (
     .getOrCreate()
 )
 spark.sparkContext.setLogLevel("ERROR")
-
-
 
 
 def read_from_source(query: str, schema: StructType):
@@ -76,8 +66,6 @@ def read_from_source(query: str, schema: StructType):
         .schema(schema)
         .load()
     )
-
-
 
 
 def ingest_facts(target_date: str, is_incremental: bool = True):
@@ -131,8 +119,6 @@ def ingest_facts(target_date: str, is_incremental: bool = True):
                 FROM order_details
             ) AS q_details_full""",
         }
-
-
 
 
     for table, query in queries.items():

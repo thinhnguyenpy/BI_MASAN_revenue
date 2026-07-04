@@ -10,9 +10,6 @@ from pyspark.sql.functions import (
 )
 
 
-
-
-
 load_dotenv()
 DW_HOST = os.getenv("DW_HOST", "dwh_postgres_gold")
 DW_PORT = os.getenv("DW_PORT", "5434")
@@ -27,9 +24,6 @@ silver_dir = os.path.join(project_root, "datalake", "silver", "sales_db")
 postgres_jar = os.path.join(project_root, "jars", "postgresql-42.7.3.jar")
 
 
-
-
-
 print("Starting Spark [GOLD - SALES DATA WAREHOUSE]...")
 spark = (
     SparkSession.builder
@@ -42,15 +36,11 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-
-
-
 def get_dw_conn():
     return psycopg2.connect(
         host=DW_HOST, port=DW_PORT,
         dbname=DW_NAME, user=DW_USER, password=DW_PASSWORD
     )
-
 
 def read_gold_table(table_name):
     return (
@@ -107,9 +97,6 @@ def upsert_to_gold(df, target_table, staging_table, conflict_keys: list, update_
         conn.close()
 
 
-
-
-
 def create_staging_tables():
     sqls = [
         """CREATE TABLE IF NOT EXISTS gold.stg_dim_date (
@@ -163,24 +150,8 @@ def create_staging_tables():
         conn.close()
 
 
-
-
-
 def load_dim_date():
     print("\n[DIM_DATE] Loading (regenerating to ensure all dates)...")
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     df_dates = spark.sql("""
         SELECT explode(sequence(
@@ -233,8 +204,6 @@ def load_dim_date():
     df_new.unpersist()
 
 
-
-
 def load_dim_branch():
     print("\n[DIM_BRANCH] Loading...")
 
@@ -243,17 +212,14 @@ def load_dim_branch():
         .select("branch_id", "branch_name", "region")
     )
 
-
     try:
         existing_branches = (
             read_gold_table("gold.dim_branch")
             .select("branch_id")
         )
 
-
         df_new = df_silver.join(existing_branches, "branch_id", "left_anti")
     except:
-
         df_new = df_silver
 
     df_new.cache()
@@ -271,9 +237,6 @@ def load_dim_branch():
         update_cols=["branch_name", "region"]
     )
     df_new.unpersist()
-
-
-
 
 
 def load_dim_product():
@@ -317,9 +280,6 @@ def load_dim_product():
         update_cols=["product_name", "category_name"]
     )
     df_new.unpersist()
-
-
-
 
 
 def load_fact_sales():
@@ -386,9 +346,6 @@ def load_fact_sales():
                      "customer_segment", "quantity", "unit_price",
                      "unit_cost", "revenue", "total_cost", "profit"]
     )
-
-
-
 
 
 if __name__ == "__main__":

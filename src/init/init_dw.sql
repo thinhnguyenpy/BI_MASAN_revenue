@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS gold.dim_department (
 -- ------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS gold.dim_campaign (
     campaign_key  SERIAL PRIMARY KEY,
-    campaign_id   INT NOT NULL,         -- Đã bỏ UNIQUE ở đây để cấu hình dưới Bước 3
+    campaign_id   INT NOT NULL,         
     campaign_name VARCHAR(255),
     platform      VARCHAR(100)
 );

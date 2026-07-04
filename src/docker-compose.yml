@@ -63,7 +63,7 @@ services:
       - "5434:5432"
     volumes:
       - ./data/postgres_dw:/var/lib/postgresql/data
-      - ./init/init_dw.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init/init_dw.sql:/docker-entrypoint-init  db.d/init.sql
     networks:
       - data_network
     restart: unless-stopped

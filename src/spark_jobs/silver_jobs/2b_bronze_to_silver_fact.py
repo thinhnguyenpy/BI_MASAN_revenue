@@ -7,17 +7,10 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import DecimalType
 
-
-
-
-
 current_dir  = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
 bronze_dir   = os.path.join(project_root, "datalake", "bronze", "sales_db")
 silver_dir   = os.path.join(project_root, "datalake", "silver", "sales_db")
-
-
-
 
 print("Starting Spark [SILVER - FACTS]...")
 spark = (
@@ -30,9 +23,6 @@ spark = (
 )
 spark.sparkContext.setLogLevel("ERROR")
 
-
-
-
 DIRTY_VALUES = ["", "null", "NULL", "N/A", "n/a", "none", "None", "NaN"]
 
 def clean_string_columns(df):
@@ -44,9 +34,6 @@ def clean_string_columns(df):
                 .otherwise(trim(col(c_name)))
             )
     return df
-
-
-
 
 def transform_orders(target_date=None):
     print("\n[FACT] Cleaning ORDERS...")
@@ -102,8 +89,6 @@ def transform_orders(target_date=None):
     print(f"[SILVER] Orders saved to: {output_path}")
 
 
-
-
 def transform_order_details(target_date=None):
     print("\n[FACT] Cleaning ORDER_DETAILS...")
 
@@ -140,8 +125,6 @@ def transform_order_details(target_date=None):
     )
 
 
-
-
     df_clean = (
         df_clean
         .withColumn("quantity",
@@ -175,8 +158,6 @@ def transform_order_details(target_date=None):
     print(f"[SILVER] Order Details saved to: {output_path}")
 
 
-
-
 def process_facts(is_incremental=False, target_date=None):
     if is_incremental:
         if target_date is None:
@@ -193,8 +174,6 @@ if __name__ == "__main__":
 
     is_inc_str = os.getenv("IS_INCREMENTAL", "False")
     is_incremental = is_inc_str.lower() == "true"
-
-
 
     target_date = os.getenv("TARGET_DATE", None)
     if target_date and target_date.lower() == "none":

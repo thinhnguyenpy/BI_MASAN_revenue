@@ -11,8 +11,6 @@ bronze_dir   = os.path.join(project_root, "datalake", "bronze", "sales_db")
 silver_dir   = os.path.join(project_root, "datalake", "silver", "sales_db")
 
 
-
-
 print("Starting Spark [SILVER - DIMENSIONS]...")
 spark = (
     SparkSession.builder
@@ -23,15 +21,11 @@ spark = (
 spark.sparkContext.setLogLevel("ERROR")
 
 
-
-
 DIM_CONFIG = {
     "categories": {"pk": "category_id",  "partition_by": None},
     "products":   {"pk": "product_id",   "partition_by": "category_id"},
     "branches":   {"pk": "branch_id",    "partition_by": None},
 }
-
-
 
 
 def clean_string_columns(df):
@@ -44,9 +38,6 @@ def clean_string_columns(df):
                 .otherwise(trim(col(c_name)))
             )
     return df
-
-
-
 
 def transform_dimensions():
     for table, config in DIM_CONFIG.items():
